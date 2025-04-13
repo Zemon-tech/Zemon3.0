@@ -16,6 +16,9 @@
 # next.js
 /.next/
 /out/
+/public/sw*
+/public/workbox-*
+/public/worker-*
 
 # production
 /build
@@ -23,15 +26,18 @@
 # misc
 .DS_Store
 *.pem
+Thumbs.db
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -39,3 +45,20 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# local database files
+*.sqlite
+*.sqlite3
+*.db
+
+# backup files
+*.bak
+*.backup
+*~
+*.swp
