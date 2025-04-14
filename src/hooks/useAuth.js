@@ -35,6 +35,9 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signOut = async () => {
+    // Set user to null immediately to update isAuthenticated
+    setUser(null);
+    // Then call the actual sign out
     await supabase.auth.signOut();
     router.push('/login');
   };

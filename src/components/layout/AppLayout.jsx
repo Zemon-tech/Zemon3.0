@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   LayoutGrid, 
   CheckSquare, 
@@ -23,6 +24,7 @@ export function AppLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const pathname = usePathname();
+  const { signOut } = useAuth();
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
@@ -89,11 +91,13 @@ export function AppLayout({ children }) {
           </nav>
           
           <div className="w-64 p-4 border-t dark:border-gray-800">
-            <Button variant="outline" className="w-full flex items-center justify-center" asChild>
-              <Link href="/auth/login">
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
-              </Link>
+            <Button 
+              variant="outline" 
+              className="w-full flex items-center justify-center"
+              onClick={signOut}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
             </Button>
           </div>
         </aside>
