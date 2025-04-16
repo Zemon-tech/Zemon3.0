@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { 
   LayoutGrid, 
@@ -31,7 +31,6 @@ export function AppLayout({ children }) {
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutGrid },
-    { name: "Tasks", href: "/tasks", icon: CheckSquare },
     { name: "Chat", href: "/chat", icon: MessageSquare },
     { name: "Resources", href: "/resources", icon: FileText },
     { name: "Settings", href: "/settings", icon: Settings },
@@ -55,7 +54,6 @@ export function AppLayout({ children }) {
             <Bell className="h-5 w-5" />
           </Button>
           <Avatar>
-            <AvatarImage src="/placeholder-avatar.jpg" alt="User" />
             <AvatarFallback>JD</AvatarFallback>
           </Avatar>
         </div>
