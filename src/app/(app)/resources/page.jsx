@@ -19,7 +19,7 @@ import { supabase } from "@/lib/supabase";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function ResourcesPage() {
-  const [resources, setResources] = useState([]);
+  const [resources, setResources] = useState(null);
   const [filteredResources, setFilteredResources] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -55,6 +55,11 @@ export default function ResourcesPage() {
 
   // Filter resources based on search query and selected type
   useEffect(() => {
+    if (!resources) {
+      setFilteredResources([]);
+      return;
+    }
+    
     let results = resources;
     
     // Filter by search query
@@ -87,24 +92,25 @@ export default function ResourcesPage() {
     try {
       const { data, error } = await supabase
         .from('resources')
-        .select(`
-          *,
-          uploader:uploaded_by(name, email)
-        `);
+        .select('*');
       
-      if (error) throw error;
-      
-      // Transform the data to include uploader name directly
-      const transformedData = data?.map(resource => ({
-        ...resource,
-        // Use name if available, otherwise fallback to email
-        uploader_name: resource.uploader?.name || resource.uploader?.email
-      })) || [];
-      
-      setResources(transformedData);
-      setFilteredResources(transformedData);
+      if (error) {
+        if (error.code === '42P01') {
+          // Table doesn't exist yet, handle gracefully
+          console.error('The resources table does not exist yet. Make sure to run migrations.');
+          setResources([]);
+          setFilteredResources([]);
+        } else {
+          throw error;
+        }
+      } else {
+        setResources(data || []);
+        setFilteredResources(data || []);
+      }
     } catch (error) {
       console.error('Error fetching resources:', error);
+      setResources([]);
+      setFilteredResources([]);
     } finally {
       setIsLoading(false);
     }
@@ -176,11 +182,16 @@ export default function ResourcesPage() {
         .select();
       
       if (error) {
-        console.error('Error inserting resource data:', error);
-        throw error;
+        if (error.code === '42P01') {
+          console.error('The resources table does not exist yet. Make sure to run migrations.');
+          alert('Cannot add resources: The resources database is not yet set up.');
+        } else {
+          console.error('Error inserting resource data:', error);
+          throw error;
+        }
+      } else {
+        console.log('Resource added successfully:', data);
       }
-      
-      console.log('Resource added successfully:', data);
       
       // Close dialog and reset form
       setAddDialogOpen(false);
@@ -306,22 +317,29 @@ export default function ResourcesPage() {
 
   // Helper function to identify document types
   const isDocumentationType = (resourceType) => {
+    if (!resourceType) return false;
     return resourceType === "documentation";
   };
 
   // Helper function to identify spreadsheet types
   const isSpreadsheetType = (resourceType) => {
+    if (!resourceType) return false;
     return ["spreadsheet", "xlsx", "xls", "csv"].includes(resourceType);
   };
 
   // Helper function to identify tool types
   const isToolType = (resourceType) => {
+    if (!resourceType) return false;
     return resourceType === "tool";
   };
 
   // Function to render the appropriate icon based on resource type
   const getResourceIcon = (resource) => {
     const iconClass = "transition-transform group-hover:scale-110 duration-200";
+    
+    if (!resource || !resource.type) {
+      return <FileIcon className={`h-14 w-14 text-gray-500 ${iconClass}`} />;
+    }
     
     switch(resource.type) {
       case "documentation":
@@ -381,9 +399,11 @@ export default function ResourcesPage() {
           </p>
         )}
         <div className="mt-auto flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
-            {formatResourceType(resource.type)}
-          </span>
+          {resource.type && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+              {formatResourceType(resource.type)}
+            </span>
+          )}
           {resource.created_at && (
             <span className="text-xs text-gray-500 dark:text-gray-400">
               {formatDate(resource.created_at)}
@@ -412,8 +432,8 @@ export default function ResourcesPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="h-full">
+      <div className="flex items-center justify-between mb-6 p-6 border-b">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Resources</h1>
           <p className="text-muted-foreground">Manage and share team resources</p>
@@ -579,9 +599,9 @@ export default function ResourcesPage() {
         </DialogContent>
       </Dialog>
 
-      <div className="flex gap-6">
+      <div className="flex h-[calc(100%-7rem)] overflow-auto">
         {/* Sidebar */}
-        <div className="w-52 flex-shrink-0">
+        <div className="w-64 p-4 border-r overflow-auto flex-shrink-0">
           <div className="mb-6">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -594,10 +614,10 @@ export default function ResourcesPage() {
             </div>
           </div>
           
-          <h3 className="font-semibold text-base mb-3">Categories</h3>
-          <div className="space-y-2">
+          <h3 className="font-semibold text-sm text-muted-foreground mb-2">CATEGORIES</h3>
+          <div className="space-y-1">
             <button
-              className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="w-full flex items-center justify-between px-2 py-1.5 rounded-md mb-1 hover:bg-gray-100 dark:hover:bg-gray-800"
               onClick={() => setSelectedType("all")}
             >
               <div className="flex items-center">
@@ -605,12 +625,12 @@ export default function ResourcesPage() {
                 <span className="text-sm font-medium">All Resources</span>
               </div>
               <span className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full px-2 py-0.5 text-xs font-bold">
-                {resources.length}
+                {resources?.length || 0}
               </span>
             </button>
             
             <button
-              className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="w-full flex items-center justify-between px-2 py-1.5 rounded-md mb-1 hover:bg-gray-100 dark:hover:bg-gray-800"
               onClick={() => setSelectedType("documentation")}
             >
               <div className="flex items-center">
@@ -618,12 +638,12 @@ export default function ResourcesPage() {
                 <span className="text-sm font-medium">Documentation</span>
               </div>
               <span className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full px-2 py-0.5 text-xs font-bold">
-                {resources.filter(r => isDocumentationType(r.type)).length}
+                {resources?.filter(r => isDocumentationType(r.type)).length || 0}
               </span>
             </button>
             
             <button
-              className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="w-full flex items-center justify-between px-2 py-1.5 rounded-md mb-1 hover:bg-gray-100 dark:hover:bg-gray-800"
               onClick={() => setSelectedType("tool")}
             >
               <div className="flex items-center">
@@ -631,12 +651,12 @@ export default function ResourcesPage() {
                 <span className="text-sm font-medium">Tools</span>
               </div>
               <span className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full px-2 py-0.5 text-xs font-bold">
-                {resources.filter(r => isToolType(r.type)).length}
+                {resources?.filter(r => isToolType(r.type)).length || 0}
               </span>
             </button>
             
             <button
-              className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="w-full flex items-center justify-between px-2 py-1.5 rounded-md mb-1 hover:bg-gray-100 dark:hover:bg-gray-800"
               onClick={() => setSelectedType("video")}
             >
               <div className="flex items-center">
@@ -644,14 +664,14 @@ export default function ResourcesPage() {
                 <span className="text-sm font-medium">Videos</span>
               </div>
               <span className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full px-2 py-0.5 text-xs font-bold">
-                {resources.filter(r => r.type === "video").length}
+                {resources?.filter(r => r.type === "video").length || 0}
               </span>
             </button>
           </div>
         </div>
         
         {/* Main content */}
-        <div className="flex-1">
+        <div className="flex-1 overflow-auto p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">
               {selectedType ? 
@@ -670,6 +690,18 @@ export default function ResourcesPage() {
                 <div className="h-64 flex items-center justify-center">
                   Loading resources...
                 </div>
+              ) : resources === null ? (
+                <div className="h-64 flex flex-col items-center justify-center text-center p-4">
+                  <p className="mb-2 text-lg text-red-500">The resources database is not yet set up.</p>
+                  <p className="text-muted-foreground mb-4">Please run the database migrations to initialize the tables.</p>
+                  <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg mt-2 text-left">
+                    <p className="text-sm font-mono mb-2">Run these commands in your terminal:</p>
+                    <code className="text-xs bg-gray-200 dark:bg-gray-700 p-1 rounded block mb-2">
+                      cd {`{project-directory}`}<br/>
+                      npx supabase migration up
+                    </code>
+                  </div>
+                </div>
               ) : filteredResources.length === 0 ? (
                 <div className="h-64 flex items-center justify-center text-muted-foreground">
                   No resources found
@@ -686,6 +718,18 @@ export default function ResourcesPage() {
               {isLoading ? (
                 <div className="h-64 flex items-center justify-center">
                   Loading resources...
+                </div>
+              ) : resources === null ? (
+                <div className="h-64 flex flex-col items-center justify-center text-center p-4">
+                  <p className="mb-2 text-lg text-red-500">The resources database is not yet set up.</p>
+                  <p className="text-muted-foreground mb-4">Please run the database migrations to initialize the tables.</p>
+                  <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg mt-2 text-left">
+                    <p className="text-sm font-mono mb-2">Run these commands in your terminal:</p>
+                    <code className="text-xs bg-gray-200 dark:bg-gray-700 p-1 rounded block mb-2">
+                      cd {`{project-directory}`}<br/>
+                      npx supabase migration up
+                    </code>
+                  </div>
                 </div>
               ) : filteredResources.length === 0 ? (
                 <div className="h-64 flex items-center justify-center text-muted-foreground">

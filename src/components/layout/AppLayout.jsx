@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/lib/supabase";
 import { 
   LayoutGrid, 
   CheckSquare, 
@@ -17,21 +18,56 @@ import {
   Menu,
   Bell,
   Moon,
-  Sun
+  Sun,
+  Sparkles
 } from "lucide-react";
 
 export function AppLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [userData, setUserData] = useState(null);
   const pathname = usePathname();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
+
+  useEffect(() => {
+    // Fetch user data from the database if authenticated
+    const fetchUserData = async () => {
+      if (user && user.id) {
+        try {
+          const { data, error } = await supabase
+            .from('users')
+            .select('name, email, role')
+            .eq('id', user.id)
+            .single();
+          
+          if (error) throw error;
+          setUserData(data);
+        } catch (error) {
+          console.error('Error fetching user data:', error.message);
+        }
+      }
+    };
+
+    fetchUserData();
+  }, [user]);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
 
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (!userData || !userData.name) return 'U';
+    return userData.name.split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutGrid },
     { name: "Chat", href: "/chat", icon: MessageSquare },
+    { name: "AI Assistant", href: "/ai", icon: Sparkles },
     { name: "Resources", href: "/resources", icon: FileText },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
@@ -53,9 +89,16 @@ export function AppLayout({ children }) {
           <Button variant="ghost" size="icon">
             <Bell className="h-5 w-5" />
           </Button>
-          <Avatar>
-            <AvatarFallback>JD</AvatarFallback>
-          </Avatar>
+          <div className="flex items-center">
+            {userData && (
+              <span className="mr-2 text-sm font-medium">
+                {userData.name || 'User'}
+              </span>
+            )}
+            <Avatar>
+              <AvatarFallback>{getUserInitials()}</AvatarFallback>
+            </Avatar>
+          </div>
         </div>
       </header>
 
@@ -101,7 +144,7 @@ export function AppLayout({ children }) {
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-950 p-6">
+        <main className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-950">
           {children}
         </main>
       </div>
