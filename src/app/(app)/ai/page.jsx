@@ -55,6 +55,7 @@ export default function AiChatPage() {
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const messagesEndRef = useRef(null);
+  const [showRateLimitWarning, setShowRateLimitWarning] = useState(false);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -72,24 +73,44 @@ export default function AiChatPage() {
     return format(new Date(timestamp), 'h:mm a');
   };
   
+  // Check for rate limit warnings in error messages
+  useEffect(() => {
+    if (error && (error.includes("429") || error.includes("quota") || error.includes("rate limit"))) {
+      setShowRateLimitWarning(true);
+      // Hide the warning after 10 seconds
+      const timer = setTimeout(() => setShowRateLimitWarning(false), 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+  
   // Handle sending a message
   const handleSendMessage = async (e) => {
     e.preventDefault();
     
     if (!newMessage.trim()) return;
     
-    const { success } = await sendMessage(newMessage);
+    setShowRateLimitWarning(false); // Reset warning
+    const { success, error: msgError } = await sendMessage(newMessage);
     if (success) {
       setNewMessage('');
+    }
+    
+    if (msgError && (msgError.includes("429") || msgError.includes("quota") || msgError.includes("rate limit"))) {
+      setShowRateLimitWarning(true);
     }
   };
   
   // Handle creating a new chat
   const handleCreateChat = async () => {
-    const prompt = prompt("Enter your question for the AI:");
-    if (!prompt) return;
+    setShowRateLimitWarning(false); // Reset warning
+    const userPrompt = window.prompt("Enter your question for the AI:");
+    if (!userPrompt) return;
     
-    await createChat(prompt);
+    const result = await createChat(userPrompt);
+    if (!result.success && result.error && 
+        (result.error.includes("429") || result.error.includes("quota") || result.error.includes("rate limit"))) {
+      setShowRateLimitWarning(true);
+    }
   };
   
   // Handle privacy update
@@ -321,6 +342,18 @@ export default function AiChatPage() {
             <h3 className="font-semibold">AI Assistant</h3>
           </div>
         )}
+        
+        {/* Rate limit warning banner - show only when needed */}
+        {showRateLimitWarning && (
+          <div className="bg-yellow-100 dark:bg-yellow-900/30 border-l-4 border-yellow-500 p-3 text-sm">
+            <p className="flex items-center text-yellow-800 dark:text-yellow-200">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              You've reached the API rate limit. Wait a minute before sending more messages. Using Google's Gemini API free tier (2 requests/minute).
+            </p>
+          </div>
+        )}
 
         {/* Messages */}
         {activeChat ? (
@@ -402,13 +435,13 @@ export default function AiChatPage() {
                 className="flex-1 rounded-full"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                disabled={isSending}
+                disabled={isSending || showRateLimitWarning}
                 autoComplete="off"
               />
               <Button 
                 type="submit" 
                 size="icon" 
-                disabled={!newMessage.trim() || isSending} 
+                disabled={!newMessage.trim() || isSending || showRateLimitWarning} 
                 className="rounded-full"
               >
                 <Send className="h-4 w-4" />
