@@ -2,12 +2,22 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useMusic } from "@/contexts/MusicContext";
-import { Play, Pause, SkipForward, SkipBack, Music as MusicIcon } from "lucide-react";
+import { 
+  Play, 
+  Pause, 
+  SkipForward, 
+  SkipBack, 
+  Music as MusicIcon,
+  Volume2,
+  Heart,
+  ListMusic
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function MusicPlayer() {
   const { currentTrack, isPlaying, togglePlay, nextTrack, previousTrack } = useMusic();
   const [isMobile, setIsMobile] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isTextOverflowing, setIsTextOverflowing] = useState(false);
   const textRef = useRef(null);
 
@@ -35,14 +45,85 @@ export function MusicPlayer() {
   // If no track is loaded, don't render the player
   if (!currentTrack) return null;
 
-  // Define source icon or text
-  const sourceLabel = currentTrack.source === 'upload' ? 'Local' : 
-                     currentTrack.source === 'soundcloud' ? 'SoundCloud' : 'YouTube';
-
-  return (
-    <div className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-full h-12 shadow-md overflow-hidden" style={{ width: isMobile ? '130px' : '300px' }}>
+  // Compact player for navbar
+  const renderCompactPlayer = () => (
+    <div 
+      className="flex items-center border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-md"
+      style={{ width: isMobile ? '90px' : '220px', height: '36px' }}
+      onClick={() => !isMobile && setIsExpanded(true)}
+    >
       {!isMobile && (
-        <div className="h-12 w-12 flex-shrink-0 relative">
+        <div className="flex-shrink-0" style={{ width: '36px', height: '36px' }}>
+          {currentTrack.thumbnail ? (
+            <img
+              src={currentTrack.thumbnail}
+              alt={`${currentTrack.title} thumbnail`}
+              className="h-full w-full object-cover rounded-l-md"
+            />
+          ) : (
+            <div className="h-full w-full flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-l-md">
+              <MusicIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+            </div>
+          )}
+        </div>
+      )}
+      
+      {!isMobile && (
+        <div className="mx-2 flex-1 min-w-0 overflow-hidden">
+          <div 
+            ref={textRef}
+            className={cn(
+              "text-xs font-medium whitespace-nowrap text-gray-800 dark:text-white leading-tight",
+              isTextOverflowing && "animate-marquee"
+            )}
+          >
+            {currentTrack.title}
+          </div>
+          <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate leading-tight">
+            {currentTrack.artist}
+          </p>
+        </div>
+      )}
+      
+      <div className="flex items-center px-1.5 ml-auto">
+        <button
+          onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+          className="h-5 w-5 rounded-full bg-black dark:bg-white flex items-center justify-center text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
+          aria-label={isPlaying ? "Pause" : "Play"}
+        >
+          {isPlaying ? (
+            <Pause size={12} />
+          ) : (
+            <Play size={12} className="ml-0.5" />
+          )}
+        </button>
+        
+        {!isMobile && (
+          <button
+            onClick={(e) => { e.stopPropagation(); nextTrack(); }}
+            className="h-5 w-5 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors ml-1"
+            aria-label="Next track"
+          >
+            <SkipForward size={12} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  // Expanded player modal
+  const renderExpandedPlayer = () => (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setIsExpanded(false)}>
+      <div 
+        className="relative rounded-xl p-6 max-w-md w-full bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-700"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="absolute top-4 right-4 text-gray-500 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300" onClick={() => setIsExpanded(false)}>
+          ✕
+        </div>
+        
+        {/* Album art */}
+        <div className="w-full aspect-square mb-6 rounded-xl overflow-hidden shadow-md border border-gray-200 dark:border-gray-700">
           {currentTrack.thumbnail ? (
             <img
               src={currentTrack.thumbnail}
@@ -51,60 +132,89 @@ export function MusicPlayer() {
             />
           ) : (
             <div className="h-full w-full flex items-center justify-center bg-gray-100 dark:bg-gray-700">
-              <MusicIcon className="h-6 w-6 text-gray-400" />
+              <MusicIcon className="h-20 w-20 text-gray-400" />
             </div>
           )}
-          <div className="absolute top-0 right-0 bg-gray-800/70 text-white text-xs px-1 py-0.5">
-            {sourceLabel}
-          </div>
         </div>
-      )}
-      
-      {!isMobile && (
-        <div className="mx-3 w-[150px] flex-shrink-0 overflow-hidden">
-          <div 
-            ref={textRef}
-            className={cn(
-              "text-sm font-semibold whitespace-nowrap dark:text-white",
-              isTextOverflowing && "animate-marquee"
-            )}
-          >
+        
+        {/* Track info */}
+        <div className="mb-8 text-center">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
             {currentTrack.title}
-          </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">
             {currentTrack.artist}
           </p>
         </div>
-      )}
-      
-      <div className={cn("flex items-center", isMobile ? "mx-2" : "mx-3")}>
-        {!isMobile && (
-          <button
-            onClick={previousTrack}
-            className="h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center dark:text-white mr-1"
-          >
-            <SkipBack size={16} />
+        
+        {/* Progress bar (visual only) */}
+        <div className="mb-6">
+          <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-black dark:bg-white" 
+              style={{ width: '30%' }} 
+            />
+          </div>
+          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+            <span>0:30</span>
+            <span>3:45</span>
+          </div>
+        </div>
+        
+        {/* Controls */}
+        <div className="flex justify-center items-center mb-6">
+          <button className="mx-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+            <Heart size={22} />
           </button>
-        )}
+          
+          <button 
+            onClick={previousTrack} 
+            className="mx-4 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+          >
+            <SkipBack size={28} />
+          </button>
+          
+          <button 
+            onClick={togglePlay} 
+            className="h-14 w-14 rounded-full bg-black dark:bg-white flex items-center justify-center text-white dark:text-black mx-2 hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors shadow-md"
+          >
+            {isPlaying ? (
+              <Pause size={28} />
+            ) : (
+              <Play size={28} className="ml-1" />
+            )}
+          </button>
+          
+          <button 
+            onClick={nextTrack} 
+            className="mx-4 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+          >
+            <SkipForward size={28} />
+          </button>
+          
+          <button className="mx-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+            <ListMusic size={22} />
+          </button>
+        </div>
         
-        <button
-          onClick={togglePlay}
-          className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white mr-1"
-        >
-          {isPlaying ? (
-            <Pause size={16} />
-          ) : (
-            <Play size={16} className="ml-0.5" />
-          )}
-        </button>
-        
-        <button
-          onClick={nextTrack}
-          className="h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center dark:text-white"
-        >
-          <SkipForward size={16} />
-        </button>
+        {/* Volume */}
+        <div className="flex items-center">
+          <Volume2 size={18} className="mr-2 text-gray-500 dark:text-gray-400" />
+          <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-black dark:bg-white" 
+              style={{ width: '70%' }} 
+            />
+          </div>
+        </div>
       </div>
+    </div>
+  );
+
+  return (
+    <>
+      {renderCompactPlayer()}
+      {isExpanded && renderExpandedPlayer()}
 
       <style jsx global>{`
         @keyframes marquee {
@@ -117,6 +227,6 @@ export function MusicPlayer() {
           animation: marquee 10s linear infinite;
         }
       `}</style>
-    </div>
+    </>
   );
 } 

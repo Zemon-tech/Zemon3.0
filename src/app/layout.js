@@ -33,13 +33,17 @@ export default function RootLayout({ children }) {
           id="soundcloud-api"
           src="https://w.soundcloud.com/player/api.js"
           strategy="beforeInteractive"
-          onLoad={() => {
-            console.log('SoundCloud API loaded via Next.js Script');
+        />
+        
+        {/* Script to initialize SoundCloud when loaded */}
+        <Script id="soundcloud-init">
+          {`
             if (typeof window !== 'undefined' && window.setupSoundCloudReady) {
+              console.log('SoundCloud API loaded via Next.js Script');
               window.setupSoundCloudReady();
             }
-          }}
-        />
+          `}
+        </Script>
         
         {/* YouTube IFrame API */}
         <Script
