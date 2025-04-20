@@ -9,7 +9,8 @@ import { Separator } from "@/components/ui/separator";
 import { 
   FileIcon, Search, Plus, Grid, List, 
   FileTextIcon, FileImageIcon, FileVideoIcon, 
-  ExternalLink, Trash2, Edit, WrenchIcon
+  ExternalLink, Trash2, Edit, WrenchIcon,
+  PencilIcon, TrashIcon, ExternalLinkIcon, DownloadIcon
 } from "lucide-react";
 import { 
   Dialog, DialogContent, DialogHeader, DialogTitle, 
@@ -17,6 +18,9 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/lib/supabase";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { PlayCircleIcon } from "@/components/icons/PlayCircleIcon";
+import { LinkIcon } from "@/components/icons/LinkIcon";
 
 export default function ResourcesPage() {
   const [resources, setResources] = useState(null);
@@ -37,6 +41,15 @@ export default function ResourcesPage() {
   const [type, setType] = useState("");
   const [url, setUrl] = useState("");
   const [file, setFile] = useState(null);
+
+  // Edit form states
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editType, setEditType] = useState("");
+  const [editUrl, setEditUrl] = useState("");
+  const [editFile, setEditFile] = useState(null);
+  const [editResourceHasFile, setEditResourceHasFile] = useState(false);
+  const [editFileUrl, setEditFileUrl] = useState("");
 
   // Fetch current user on component mount
   useEffect(() => {
@@ -368,375 +381,358 @@ export default function ResourcesPage() {
   
   // Render resource card for grid view
   const ResourceCard = ({ resource }) => {
-    // Determine background color based on resource type
-    const getBgColor = () => {
+    // Get accent color based on resource type
+    const getTypeStyles = () => {
       switch(resource.type) {
         case "documentation":
-          return "bg-blue-50 dark:bg-blue-900/20";
+          return {
+            iconColor: "text-blue-500",
+            bgColor: "bg-blue-50 dark:bg-blue-900/10",
+            tagBg: "bg-blue-100 dark:bg-blue-800/30",
+            tagText: "text-blue-800 dark:text-blue-300",
+            borderColor: "border-blue-200 dark:border-blue-800/50"
+          };
         case "video":
-          return "bg-purple-50 dark:bg-purple-900/20";
+          return {
+            iconColor: "text-purple-500",
+            bgColor: "bg-purple-50 dark:bg-purple-900/10",
+            tagBg: "bg-purple-100 dark:bg-purple-800/30",
+            tagText: "text-purple-800 dark:text-purple-300",
+            borderColor: "border-purple-200 dark:border-purple-800/50"
+          };
         case "tool":
-          return "bg-green-50 dark:bg-green-900/20";
+          return {
+            iconColor: "text-green-500",
+            bgColor: "bg-green-50 dark:bg-green-900/10",
+            tagBg: "bg-green-100 dark:bg-green-800/30",
+            tagText: "text-green-800 dark:text-green-300",
+            borderColor: "border-green-200 dark:border-green-800/50"
+          };
         default:
-          return "bg-gray-50 dark:bg-gray-800";
+          return {
+            iconColor: "text-gray-500",
+            bgColor: "bg-gray-50 dark:bg-gray-800/50",
+            tagBg: "bg-gray-100 dark:bg-gray-700",
+            tagText: "text-gray-700 dark:text-gray-300",
+            borderColor: "border-gray-200 dark:border-gray-700"
+          };
       }
     };
 
+    const styles = getTypeStyles();
+    
     return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow">
-      <CardHeader className="p-3">
-        <div className={`group flex items-center justify-center h-24 rounded mb-2 ${getBgColor()}`}>
+      <Card className="overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200">
+        <div className={`flex items-center justify-center h-32 ${styles.bgColor}`}>
           {getResourceIcon(resource)}
         </div>
-        <CardTitle className="text-base font-medium truncate">
-          {resource.title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-3 pt-0 flex flex-col h-20">
-        {resource.description && (
-          <p className="mb-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
-            {resource.description}
-          </p>
-        )}
-        <div className="mt-auto flex flex-wrap items-center gap-2">
-          {resource.type && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
-              {formatResourceType(resource.type)}
-            </span>
+        
+        <CardContent className="p-4">
+          <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-2 mb-2">
+            {resource.title}
+          </h3>
+          
+          {resource.description && (
+            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
+              {resource.description}
+            </p>
           )}
-          {resource.created_at && (
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              {formatDate(resource.created_at)}
-            </span>
-          )}
-        </div>
-      </CardContent>
-      <CardFooter className="p-2 border-t bg-gray-50 dark:bg-gray-800 flex justify-between">
-        <Button variant="ghost" size="sm" className="text-xs" onClick={() => window.open(resource.url, "_blank")}>View</Button>
-        <div className="flex gap-1">
+          
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            {resource.type && (
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${styles.tagBg} ${styles.tagText}`}>
+                {formatResourceType(resource.type)}
+              </span>
+            )}
+            {resource.created_at && (
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {formatDate(resource.created_at)}
+              </span>
+            )}
+          </div>
+        </CardContent>
+        
+        <CardFooter className="px-4 py-3 bg-gray-50 dark:bg-gray-800 flex justify-between border-t border-gray-100 dark:border-gray-700">
           <Button 
             variant="ghost" 
             size="sm" 
-            className="text-xs p-1" 
+            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 hover:bg-gray-100"
             onClick={() => handleEditResource(resource)}
           >
-            <Edit className="h-4 w-4 text-blue-500" />
+            <Edit className="h-4 w-4 mr-1" />
+            Edit
           </Button>
-          <Button variant="ghost" size="sm" className="text-xs p-1" onClick={() => deleteResource(resource.id)}>
-            <Trash2 className="h-4 w-4 text-red-500" />
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-gray-600 dark:text-gray-400"
+            onClick={() => window.open(resource.url, "_blank")}
+          >
+            <ExternalLink className="h-4 w-4 mr-1" />
+            View
           </Button>
-        </div>
-      </CardFooter>
-    </Card>
+          
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-gray-600 dark:text-gray-400 hover:text-red-600 hover:bg-red-50"
+            onClick={() => deleteResource(resource.id)}
+          >
+            <Trash2 className="h-4 w-4 mr-1" />
+            Delete
+          </Button>
+        </CardFooter>
+      </Card>
     );
   };
 
+  const resetEditForm = () => {
+    setEditTitle("");
+    setEditDescription("");
+    setEditType("");
+    setEditUrl("");
+    setEditFile(null);
+    setEditResourceHasFile(false);
+    setEditFileUrl("");
+  };
+
   return (
-    <div className="h-full">
-      <div className="flex items-center justify-between mb-6 p-6 border-b">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Resources</h1>
-          <p className="text-muted-foreground">Manage and share team resources</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Select value={selectedType} onValueChange={setSelectedType}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="All Types" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="tool">Tool</SelectItem>
-              <SelectItem value="video">Video</SelectItem>
-              <SelectItem value="documentation">Documentation</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button onClick={() => setAddDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Resource
-          </Button>
+    <div className="h-full bg-gray-50 dark:bg-gray-900">
+      {/* Header */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div className="mb-4 md:mb-0">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Resources
+              </h1>
+              <p className="text-gray-500 dark:text-gray-400 mt-1">
+                Manage and share team resources
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Select value={selectedType} onValueChange={setSelectedType}>
+                <SelectTrigger className="w-[150px] bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="tool">Tool</SelectItem>
+                  <SelectItem value="video">Video</SelectItem>
+                  <SelectItem value="documentation">Documentation</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button 
+                onClick={() => setAddDialogOpen(true)}
+                className="bg-primary hover:bg-primary/90"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Resource
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
-
-      {/* Add Resource Dialog */}
-      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Resource</DialogTitle>
-            <DialogDescription>
-              Fill in the details to add a new resource to the library.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <label htmlFor="title">Title</label>
-              <Input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <label htmlFor="description">Description</label>
-              <Input
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <label htmlFor="type">Type</label>
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="tool">Tool</SelectItem>
-                  <SelectItem value="video">Video</SelectItem>
-                  <SelectItem value="documentation">Documentation</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <label htmlFor="url">URL (for links)</label>
-              <Input
-                id="url"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://example.com"
-              />
-            </div>
-            <div className="grid gap-2">
-              <label htmlFor="file">Upload File</label>
-              <Input
-                id="file"
-                type="file"
-                onChange={(e) => setFile(e.target.files[0])}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              resetForm();
-              setAddDialogOpen(false);
-            }}>
-              Cancel
-            </Button>
-            <Button onClick={addResource}>
-              Add Resource
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Resource Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Resource</DialogTitle>
-            <DialogDescription>
-              Update the resource details below.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <label htmlFor="edit-title">Title</label>
-              <Input
-                id="edit-title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <label htmlFor="edit-description">Description</label>
-              <Input
-                id="edit-description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <label htmlFor="edit-type">Type</label>
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger id="edit-type">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="tool">Tool</SelectItem>
-                  <SelectItem value="video">Video</SelectItem>
-                  <SelectItem value="documentation">Documentation</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <label htmlFor="edit-url">URL</label>
-              <Input
-                id="edit-url"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <label htmlFor="edit-file">Upload New File</label>
-              <Input
-                id="edit-file"
-                type="file"
-                onChange={(e) => setFile(e.target.files[0])}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              resetForm();
-              setResourceToEdit(null);
-              setEditDialogOpen(false);
-            }}>
-              Cancel
-            </Button>
-            <Button onClick={updateResource}>
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <div className="flex h-[calc(100%-7rem)] overflow-auto">
+      
+      {/* Main Content */}
+      <div className="flex h-[calc(100%-125px)] overflow-hidden">
         {/* Sidebar */}
-        <div className="w-64 p-4 border-r overflow-auto flex-shrink-0">
-          <div className="mb-6">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search resources" 
-                className="pl-8" 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+        <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-auto flex-shrink-0">
+          <div className="p-4">
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
+                <Input 
+                  placeholder="Search resources" 
+                  className="pl-8 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
             </div>
-          </div>
-          
-          <h3 className="font-semibold text-sm text-muted-foreground mb-2">CATEGORIES</h3>
-          <div className="space-y-1">
-            <button
-              className="w-full flex items-center justify-between px-2 py-1.5 rounded-md mb-1 hover:bg-gray-100 dark:hover:bg-gray-800"
-              onClick={() => setSelectedType("all")}
-            >
-              <div className="flex items-center">
-                <FileIcon className="h-4 w-4 mr-2 text-gray-500" />
-                <span className="text-sm font-medium">All Resources</span>
-              </div>
-              <span className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full px-2 py-0.5 text-xs font-bold">
-                {resources?.length || 0}
-              </span>
-            </button>
             
-            <button
-              className="w-full flex items-center justify-between px-2 py-1.5 rounded-md mb-1 hover:bg-gray-100 dark:hover:bg-gray-800"
-              onClick={() => setSelectedType("documentation")}
-            >
-              <div className="flex items-center">
-                <FileTextIcon className="h-4 w-4 mr-2 text-blue-500" />
-                <span className="text-sm font-medium">Documentation</span>
-              </div>
-              <span className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full px-2 py-0.5 text-xs font-bold">
-                {resources?.filter(r => isDocumentationType(r.type)).length || 0}
-              </span>
-            </button>
-            
-            <button
-              className="w-full flex items-center justify-between px-2 py-1.5 rounded-md mb-1 hover:bg-gray-100 dark:hover:bg-gray-800"
-              onClick={() => setSelectedType("tool")}
-            >
-              <div className="flex items-center">
-                <WrenchIcon className="h-4 w-4 mr-2 text-green-500" />
-                <span className="text-sm font-medium">Tools</span>
-              </div>
-              <span className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full px-2 py-0.5 text-xs font-bold">
-                {resources?.filter(r => isToolType(r.type)).length || 0}
-              </span>
-            </button>
-            
-            <button
-              className="w-full flex items-center justify-between px-2 py-1.5 rounded-md mb-1 hover:bg-gray-100 dark:hover:bg-gray-800"
-              onClick={() => setSelectedType("video")}
-            >
-              <div className="flex items-center">
-                <FileVideoIcon className="h-4 w-4 mr-2 text-purple-500" />
-                <span className="text-sm font-medium">Videos</span>
-              </div>
-              <span className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full px-2 py-0.5 text-xs font-bold">
-                {resources?.filter(r => r.type === "video").length || 0}
-              </span>
-            </button>
+            <h3 className="font-semibold text-xs uppercase text-gray-500 dark:text-gray-400 mb-3 px-2">Categories</h3>
+            <div className="space-y-1">
+              <button
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg ${
+                  selectedType === "all" 
+                    ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white font-medium" 
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                }`}
+                onClick={() => setSelectedType("all")}
+              >
+                <div className="flex items-center">
+                  <FileIcon className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
+                  <span className="text-sm">All Resources</span>
+                </div>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                  selectedType === "all"
+                    ? "bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200"
+                    : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                }`}>
+                  {resources?.length || 0}
+                </span>
+              </button>
+              
+              <button
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg ${
+                  selectedType === "documentation" 
+                    ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium" 
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                }`}
+                onClick={() => setSelectedType("documentation")}
+              >
+                <div className="flex items-center">
+                  <FileTextIcon className="h-4 w-4 mr-2 text-blue-500" />
+                  <span className="text-sm">Documentation</span>
+                </div>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                  selectedType === "documentation"
+                    ? "bg-blue-100 dark:bg-blue-800/50 text-blue-800 dark:text-blue-300"
+                    : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                }`}>
+                  {resources?.filter(r => isDocumentationType(r.type)).length || 0}
+                </span>
+              </button>
+              
+              <button
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg ${
+                  selectedType === "tool" 
+                    ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 font-medium" 
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                }`}
+                onClick={() => setSelectedType("tool")}
+              >
+                <div className="flex items-center">
+                  <WrenchIcon className="h-4 w-4 mr-2 text-green-500" />
+                  <span className="text-sm">Tools</span>
+                </div>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                  selectedType === "tool"
+                    ? "bg-green-100 dark:bg-green-800/50 text-green-800 dark:text-green-300"
+                    : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                }`}>
+                  {resources?.filter(r => isToolType(r.type)).length || 0}
+                </span>
+              </button>
+              
+              <button
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg ${
+                  selectedType === "video" 
+                    ? "bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 font-medium" 
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                }`}
+                onClick={() => setSelectedType("video")}
+              >
+                <div className="flex items-center">
+                  <FileVideoIcon className="h-4 w-4 mr-2 text-purple-500" />
+                  <span className="text-sm">Videos</span>
+                </div>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                  selectedType === "video"
+                    ? "bg-purple-100 dark:bg-purple-800/50 text-purple-800 dark:text-purple-300"
+                    : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                }`}>
+                  {resources?.filter(r => r.type === "video").length || 0}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
         
         {/* Main content */}
-        <div className="flex-1 overflow-auto p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">
-              {selectedType ? 
-                (selectedType.charAt(0).toUpperCase() + selectedType.slice(1)) : 
-                "All Resources"}
+        <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+              {selectedType === "all" ? "All Resources" : 
+               selectedType === "documentation" ? "Documentation" :
+               selectedType === "tool" ? "Tools" :
+               selectedType === "video" ? "Videos" : "Resources"}
             </h2>
+            
+            <Tabs defaultValue="all" className="ml-auto">
+              <TabsList className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                <TabsTrigger value="all" className="data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-700">All</TabsTrigger>
+                <TabsTrigger value="recent" className="data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-700">Recent</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
           
           <Tabs defaultValue="all" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="recent">Recent</TabsTrigger>
-            </TabsList>
             <TabsContent value="all">
               {isLoading ? (
                 <div className="h-64 flex items-center justify-center">
-                  Loading resources...
+                  <div className="h-12 w-12 rounded-full border-4 border-gray-200 dark:border-gray-700 border-t-black dark:border-t-white animate-spin"></div>
                 </div>
               ) : resources === null ? (
                 <div className="h-64 flex flex-col items-center justify-center text-center p-4">
-                  <p className="mb-2 text-lg text-red-500">The resources database is not yet set up.</p>
-                  <p className="text-muted-foreground mb-4">Please run the database migrations to initialize the tables.</p>
-                  <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg mt-2 text-left">
-                    <p className="text-sm font-mono mb-2">Run these commands in your terminal:</p>
-                    <code className="text-xs bg-gray-200 dark:bg-gray-700 p-1 rounded block mb-2">
+                  <div className="w-16 h-16 mb-4 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                    <FileIcon className="h-8 w-8 text-red-500" />
+                  </div>
+                  <p className="mb-2 text-lg text-red-500 font-medium">The resources database is not yet set up.</p>
+                  <p className="text-gray-500 dark:text-gray-400 mb-4 max-w-md">Please run the database migrations to initialize the tables.</p>
+                  <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg mt-2 text-left max-w-md shadow-sm">
+                    <p className="text-sm font-medium mb-2">Run these commands in your terminal:</p>
+                    <code className="text-xs bg-gray-200 dark:bg-gray-700 p-2 rounded block mb-2 font-mono">
                       cd {`{project-directory}`}<br/>
                       npx supabase migration up
                     </code>
                   </div>
                 </div>
               ) : filteredResources.length === 0 ? (
-                <div className="h-64 flex items-center justify-center text-muted-foreground">
-                  No resources found
+                <div className="h-64 flex flex-col items-center justify-center">
+                  <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                    <Search className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <p className="text-lg font-medium text-gray-900 dark:text-white mb-1">No resources found</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-center max-w-md">
+                    {searchQuery ? 
+                      "Try adjusting your search or filter criteria to find what you're looking for." : 
+                      "Get started by adding your first resource with the 'Add Resource' button."}
+                  </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredResources.map((resource) => (
                     <ResourceCard key={resource.id} resource={resource} />
                   ))}
                 </div>
               )}
             </TabsContent>
+            
             <TabsContent value="recent">
               {isLoading ? (
                 <div className="h-64 flex items-center justify-center">
-                  Loading resources...
+                  <div className="h-12 w-12 rounded-full border-4 border-gray-200 dark:border-gray-700 border-t-black dark:border-t-white animate-spin"></div>
                 </div>
               ) : resources === null ? (
                 <div className="h-64 flex flex-col items-center justify-center text-center p-4">
-                  <p className="mb-2 text-lg text-red-500">The resources database is not yet set up.</p>
-                  <p className="text-muted-foreground mb-4">Please run the database migrations to initialize the tables.</p>
-                  <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg mt-2 text-left">
-                    <p className="text-sm font-mono mb-2">Run these commands in your terminal:</p>
-                    <code className="text-xs bg-gray-200 dark:bg-gray-700 p-1 rounded block mb-2">
+                  <div className="w-16 h-16 mb-4 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                    <FileIcon className="h-8 w-8 text-red-500" />
+                  </div>
+                  <p className="mb-2 text-lg text-red-500 font-medium">The resources database is not yet set up.</p>
+                  <p className="text-gray-500 dark:text-gray-400 mb-4 max-w-md">Please run the database migrations to initialize the tables.</p>
+                  <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg mt-2 text-left max-w-md shadow-sm">
+                    <p className="text-sm font-medium mb-2">Run these commands in your terminal:</p>
+                    <code className="text-xs bg-gray-200 dark:bg-gray-700 p-2 rounded block mb-2 font-mono">
                       cd {`{project-directory}`}<br/>
                       npx supabase migration up
                     </code>
                   </div>
                 </div>
               ) : filteredResources.length === 0 ? (
-                <div className="h-64 flex items-center justify-center text-muted-foreground">
-                  No recent resources
+                <div className="h-64 flex flex-col items-center justify-center">
+                  <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                    <Search className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <p className="text-lg font-medium text-gray-900 dark:text-white mb-1">No recent resources</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-center max-w-md">
+                    Try adding a new resource to see it appear here.
+                  </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredResources.slice(0, 4).map((resource) => (
                     <ResourceCard key={resource.id} resource={resource} />
                   ))}
@@ -746,6 +742,169 @@ export default function ResourcesPage() {
           </Tabs>
         </div>
       </div>
+
+      {/* Add Resource Dialog */}
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Resource</DialogTitle>
+            <DialogDescription>
+              Fill in the details to add a new resource to the library.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label htmlFor="title" className="text-sm font-medium">Title</label>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="border-gray-200 dark:border-gray-700"
+              />
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="description" className="text-sm font-medium">Description</label>
+              <Input
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="border-gray-200 dark:border-gray-700"
+              />
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="type" className="text-sm font-medium">Type</label>
+              <Select value={type} onValueChange={setType}>
+                <SelectTrigger className="border-gray-200 dark:border-gray-700">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tool">Tool</SelectItem>
+                  <SelectItem value="video">Video</SelectItem>
+                  <SelectItem value="documentation">Documentation</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="url" className="text-sm font-medium">URL (for links)</label>
+              <Input
+                id="url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://example.com"
+                className="border-gray-200 dark:border-gray-700"
+              />
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="file" className="text-sm font-medium">Upload File</label>
+              <Input
+                id="file"
+                type="file"
+                onChange={(e) => setFile(e.target.files[0])}
+                className="border-gray-200 dark:border-gray-700"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              resetForm();
+              setAddDialogOpen(false);
+            }} className="border-gray-200 dark:border-gray-700">
+              Cancel
+            </Button>
+            <Button onClick={addResource} className="bg-black hover:bg-gray-800 text-white dark:bg-white dark:text-black dark:hover:bg-gray-200">
+              Add Resource
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Resource Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Resource</DialogTitle>
+            <DialogDescription>
+              Update the resource details.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label htmlFor="edit-title" className="text-sm font-medium">Title</label>
+              <Input
+                id="edit-title"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="border-gray-200 dark:border-gray-700"
+              />
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="edit-description" className="text-sm font-medium">Description</label>
+              <Input
+                id="edit-description"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                className="border-gray-200 dark:border-gray-700"
+              />
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="edit-type" className="text-sm font-medium">Type</label>
+              <Select value={editType} onValueChange={setEditType}>
+                <SelectTrigger className="border-gray-200 dark:border-gray-700">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tool">Tool</SelectItem>
+                  <SelectItem value="video">Video</SelectItem>
+                  <SelectItem value="documentation">Documentation</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="edit-url" className="text-sm font-medium">URL (for links)</label>
+              <Input
+                id="edit-url"
+                value={editUrl}
+                onChange={(e) => setEditUrl(e.target.value)}
+                placeholder="https://example.com"
+                className="border-gray-200 dark:border-gray-700"
+              />
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="edit-file" className="text-sm font-medium">Upload File (optional)</label>
+              <Input
+                id="edit-file"
+                type="file"
+                onChange={(e) => setEditFile(e.target.files[0])}
+                className="border-gray-200 dark:border-gray-700"
+              />
+              {editResourceHasFile && (
+                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                  <FileIcon className="h-4 w-4" />
+                  <span>Current file: {editFileUrl?.split('/').pop()}</span>
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                resetEditForm();
+                setEditDialogOpen(false);
+              }}
+              className="border-gray-200 dark:border-gray-700"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={updateResource} 
+              className="bg-black hover:bg-gray-800 text-white dark:bg-white dark:text-black dark:hover:bg-gray-200"
+            >
+              Update Resource
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 

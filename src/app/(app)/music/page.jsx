@@ -249,21 +249,31 @@ export default function MusicPage() {
   };
 
   return (
-    <div className="container mx-auto py-6 px-4 max-w-6xl">
-      <div className="bg-black/5 dark:bg-white/5 rounded-lg p-6 mb-8 border border-gray-200 dark:border-gray-800">
-        <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">Your Music Library</h1>
-        <p className="text-gray-600 dark:text-gray-400">Listen to and manage your collection</p>
+    <div className="container mx-auto py-8 px-4 max-w-7xl">
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-gray-900 to-gray-800 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-8 mb-10 border border-gray-800 dark:border-gray-700 text-white shadow-xl relative overflow-hidden">
+        <div className="relative z-10">
+          <h1 className="text-4xl font-bold mb-2 text-white">Your Music Library</h1>
+          <p className="text-gray-300 text-lg max-w-xl">Listen to and manage your personal collection of tracks and discover new music</p>
+        </div>
+        
+        {/* Decorative Elements */}
+        <div className="absolute top-0 right-0 w-1/3 h-full opacity-10">
+          <div className="absolute top-8 right-8 w-32 h-32 rounded-full bg-white/20"></div>
+          <div className="absolute bottom-12 right-16 w-24 h-24 rounded-full bg-white/10"></div>
+          <div className="absolute top-1/2 right-32 w-16 h-16 rounded-full bg-white/15"></div>
+        </div>
       </div>
       
       {/* Search Bar */}
-      <div className="relative mb-8">
-        <div className="max-w-4xl mx-auto">
+      <div className="relative mb-10">
+        <div className="max-w-3xl mx-auto">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={22} />
             <Input
               type="text"
               placeholder="Search by title or artist"
-              className="pl-10 pr-4 py-6 h-12 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-md shadow-sm"
+              className="pl-12 pr-4 py-6 h-14 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-xl shadow-md text-base"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -272,28 +282,35 @@ export default function MusicPage() {
       </div>
       
       {/* Add Music Button - Toggle Upload Form */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-wrap justify-between items-center mb-8 gap-4">
         <h2 className="text-2xl font-bold flex items-center text-gray-900 dark:text-white">
-          <Music className="mr-2" /> 
+          <Music className="mr-3" /> 
           Your Tracks
-          <span className="ml-2 text-sm bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full">
+          <span className="ml-3 text-sm bg-black/10 dark:bg-white/10 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-full">
             {filteredTracks.length}
           </span>
         </h2>
         
         <Button 
           onClick={() => setShowUpload(!showUpload)} 
-          className="flex items-center bg-black text-white dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+          className="flex items-center bg-black text-white dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 shadow-sm rounded-xl px-5 py-2 h-auto"
         >
           {showUpload ? "Hide Upload" : "Add Music"}
-          {!showUpload && <Plus className="ml-1" size={16} />}
+          {!showUpload && <Plus className="ml-2" size={18} />}
         </Button>
       </div>
       
       {/* Error Message */}
       {errorMessage && (
-        <div className="bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-3 rounded-md mb-6 max-w-md mx-auto">
-          {errorMessage}
+        <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-4 rounded-xl mb-8 max-w-md mx-auto border border-red-100 dark:border-red-800/30 shadow-sm">
+          <div className="flex items-center">
+            <div className="mr-3 flex-shrink-0">
+              <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <p>{errorMessage}</p>
+          </div>
         </div>
       )}
       
@@ -505,18 +522,20 @@ export default function MusicPage() {
       {/* Music Library Display */}
       <div>
         {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="w-10 h-10 rounded-full border-2 border-t-transparent border-black dark:border-white animate-spin"></div>
+          <div className="flex justify-center py-12">
+            <div className="w-12 h-12 rounded-full border-3 border-t-transparent border-black dark:border-white animate-spin"></div>
           </div>
         ) : filteredTracks.length === 0 ? (
-          <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700">
-            <Music className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600 mb-3" />
-            <p className="text-lg font-medium text-gray-600 dark:text-gray-400 mb-2">
+          <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="bg-gray-50 dark:bg-gray-700/50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5">
+              <Music className="h-10 w-10 text-gray-400 dark:text-gray-500" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
               {searchQuery 
                 ? "No tracks match your search" 
                 : "Your music collection is empty"}
-            </p>
-            <p className="text-gray-500 dark:text-gray-500 mb-4 max-w-md mx-auto">
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
               {searchQuery 
                 ? "Try a different search term or clear your search" 
                 : "Click 'Add Music' to start building your collection"}
@@ -525,84 +544,103 @@ export default function MusicPage() {
               <Button 
                 variant="outline" 
                 onClick={() => setSearchQuery("")}
-                className="border-gray-300 dark:border-gray-700"
+                className="border-gray-300 dark:border-gray-700 rounded-xl"
               >
                 Clear Search
               </Button>
             ) : (
               <Button 
                 onClick={() => setShowUpload(true)}
-                className="bg-black text-white dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+                className="bg-black text-white dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 rounded-xl"
               >
                 Add Music
               </Button>
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {filteredTracks.map((track) => {
               const isCurrentlyPlaying = currentTrack?.id === track.id && isPlaying;
               
               return (
-                <Card 
+                <div 
                   key={track.id} 
-                  className="overflow-hidden flex flex-col group hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                  className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden flex flex-col group hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-gray-700"
                 >
-                  <div className="h-40 bg-gray-100 dark:bg-gray-700 relative overflow-hidden">
+                  <div className="aspect-square bg-gray-100 dark:bg-gray-700 relative overflow-hidden">
                     {track.thumbnail ? (
                       <img
                         src={track.thumbnail}
                         alt={track.title}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-600">
-                        <Music className="h-14 w-14 text-gray-400 dark:text-gray-500" />
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700">
+                        <Music className="h-16 w-16 text-gray-400 dark:text-gray-500" />
                       </div>
                     )}
                     
                     {/* Play button overlay */}
                     <button 
                       onClick={() => playTrack(track.id)}
-                      className="absolute inset-0 w-full h-full flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute inset-0 w-full h-full flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                     >
-                      <div className="w-12 h-12 rounded-full bg-black dark:bg-white flex items-center justify-center shadow-md">
-                        {isCurrentlyPlaying ? (
-                          <Pause className="h-5 w-5 text-white dark:text-black" />
-                        ) : (
-                          <Play className="h-5 w-5 text-white dark:text-black ml-0.5" />
-                        )}
+                      <div className="transform transition-transform duration-300 group-hover:scale-105">
+                        <div className="w-14 h-14 rounded-full bg-black dark:bg-white flex items-center justify-center shadow-xl">
+                          {isCurrentlyPlaying ? (
+                            <Pause className="h-6 w-6 text-white dark:text-black" />
+                          ) : (
+                            <Play className="h-6 w-6 text-white dark:text-black ml-1" />
+                          )}
+                        </div>
                       </div>
                     </button>
                     
-                    <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded-md">
+                    {/* Source tag */}
+                    <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-sm text-white text-xs px-2.5 py-1 rounded-full font-medium">
                       {track.source === 'upload' ? 'Local' : 
                        track.source === 'soundcloud' ? 'SoundCloud' : 'YouTube'}
                     </div>
+                    
+                    {/* Gradient overlay at bottom */}
+                    <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black/50 to-transparent"></div>
                   </div>
                   
-                  <div className="p-3 flex-grow flex flex-col">
-                    <div className="flex items-start justify-between">
+                  <div className="p-4 flex-grow flex flex-col">
+                    <div className="flex items-start justify-between mb-1">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-base line-clamp-1" title={track.title}>
+                        <h3 className="font-semibold text-base text-gray-900 dark:text-white line-clamp-1" title={track.title}>
                           {track.title}
                         </h3>
-                        <p className="text-gray-500 dark:text-gray-400 text-sm line-clamp-1" title={track.artist}>
+                        <p className="text-gray-500 dark:text-gray-400 text-sm line-clamp-1 mt-0.5" title={track.artist}>
                           {track.artist}
                         </p>
                       </div>
+                    </div>
+                    
+                    <div className="mt-auto pt-3 flex justify-between items-center">
+                      {isCurrentlyPlaying && (
+                        <div className="flex items-center">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5 animate-pulse"></span>
+                          <span className="text-xs text-green-600 dark:text-green-400 font-medium">Playing</span>
+                        </div>
+                      )}
+                      
+                      {!isCurrentlyPlaying && (
+                        <div className="h-5"></div> /* Empty spacer to maintain layout */
+                      )}
                       
                       <Button 
                         variant="ghost" 
                         size="sm"
-                        className="text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 h-8 w-8 p-0 rounded-full ml-2 flex-shrink-0"
+                        className="text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 h-8 w-8 p-0 rounded-full"
                         onClick={() => handleDeleteTrack(track.id)}
                       >
                         <Trash2 size={16} />
                       </Button>
                     </div>
                   </div>
-                </Card>
+                </div>
               );
             })}
           </div>
