@@ -4,31 +4,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-// Default model to use - Gemini 1.5 Pro is limited to 2 requests per minute on free tier
-// Consider using a less restricted model for development
-const DEFAULT_MODEL = 'gemini-1.5-flash'; // More generous quota than gemini-1.5-pro
-
-// Track requests to implement throttling
-let lastRequestTime = 0;
-const MIN_REQUEST_INTERVAL = 3000; // 30 seconds between requests
-
-/**
- * Helper function to throttle requests
- * @returns {Promise<void>} Promise that resolves when it's safe to proceed
- */
-async function throttleRequest() {
-  const now = Date.now();
-  const timeSinceLastRequest = now - lastRequestTime;
-  
-  if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
-    // Wait if it's been less than the minimum interval
-    const waitTime = MIN_REQUEST_INTERVAL - timeSinceLastRequest;
-    console.log(`Throttling API request for ${waitTime}ms to avoid rate limits`);
-    await new Promise(resolve => setTimeout(resolve, waitTime));
-  }
-  
-  lastRequestTime = Date.now();
-}
+// Default model to use
+const DEFAULT_MODEL = 'gemini-2.0-flash';
 
 /**
  * Get chat conversation from Gemini
@@ -37,8 +14,6 @@ async function throttleRequest() {
  */
 export async function createChatSession(model = DEFAULT_MODEL) {
   try {
-    await throttleRequest();
-    
     const geminiModel = genAI.getGenerativeModel({ model });
     return geminiModel.startChat({
       history: [],
@@ -81,8 +56,6 @@ export async function createChatSession(model = DEFAULT_MODEL) {
  */
 export async function generateResponse(prompt, chatSession = null) {
   try {
-    await throttleRequest();
-    
     let response;
     
     if (chatSession) {
@@ -98,12 +71,7 @@ export async function generateResponse(prompt, chatSession = null) {
     return text;
   } catch (error) {
     console.error('Error generating response:', error);
-    // Check if it's a rate limit error (429)
-    if (error.message && error.message.includes('429')) {
-      return "I'm receiving too many requests right now. Please try again in a minute.";
-    }
-    // Provide a fallback response in case of API errors
-    return "I'm sorry, I couldn't generate a response at this time. The AI service might be temporarily unavailable.";
+    throw error;
   }
 }
 
@@ -114,8 +82,6 @@ export async function generateResponse(prompt, chatSession = null) {
  */
 export async function generateChatTitle(prompt) {
   try {
-    await throttleRequest();
-    
     const model = genAI.getGenerativeModel({ model: DEFAULT_MODEL });
     const titlePrompt = `Generate a very short title (maximum 6 words) for a chat that starts with this prompt: "${prompt}"`;
     const response = await model.generateContent(titlePrompt);

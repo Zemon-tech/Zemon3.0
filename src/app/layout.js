@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/hooks/useAuth";
+import Script from 'next/script';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Team Management System",
-  description: "A web-based team management system for collaboration",
+  title: "Team Management App",
+  description: "A comprehensive team management application with tasks, chat, and resources",
 };
 
 export default function RootLayout({ children }) {
@@ -26,6 +27,26 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           {children}
         </AuthProvider>
+        
+        {/* SoundCloud Widget API */}
+        <Script
+          id="soundcloud-api"
+          src="https://w.soundcloud.com/player/api.js"
+          strategy="beforeInteractive"
+          onLoad={() => {
+            console.log('SoundCloud API loaded via Next.js Script');
+            if (typeof window !== 'undefined' && window.setupSoundCloudReady) {
+              window.setupSoundCloudReady();
+            }
+          }}
+        />
+        
+        {/* YouTube IFrame API */}
+        <Script
+          id="youtube-api"
+          src="https://www.youtube.com/iframe_api"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );

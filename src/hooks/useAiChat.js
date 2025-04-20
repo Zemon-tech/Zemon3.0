@@ -16,40 +16,6 @@ export function useAiChat() {
   const [error, setError] = useState(null);
   const [chatSession, setChatSession] = useState(null);
   
-  // Initialize chat session with history - moved before useEffect
-  const initializeChatSession = useCallback(async (messageHistory) => {
-    try {
-      const session = await createChatSession();
-      
-      // Filter to just get user messages
-      const userMessages = messageHistory.filter(msg => !msg.is_ai);
-      
-      // If there are no messages or only one, just initialize without history
-      if (userMessages.length <= 1) {
-        setChatSession(session);
-        return;
-      }
-      
-      // Only process the most recent message to avoid rate limits
-      // This is a compromise: we don't get full history but avoid rate limits
-      const lastUserMessage = userMessages[userMessages.length - 1];
-      
-      try {
-        // Add just the last user message to the session
-        await session.sendMessage(lastUserMessage.content);
-      } catch (error) {
-        // If we hit rate limits, just continue with an empty session
-        console.warn('Could not initialize chat history due to rate limits:', error.message);
-      }
-      
-      setChatSession(session);
-    } catch (error) {
-      console.error('Error initializing chat session:', error);
-      // Don't set error state here to avoid UI disruption
-      setChatSession(null);
-    }
-  }, []);
-  
   // Fetch user's AI chats
   useEffect(() => {
     const fetchChats = async () => {
@@ -152,46 +118,52 @@ export function useAiChat() {
     
     fetchMessages();
     
-    // Subscribe to message updates - improved subscription
-    let messageSubscription;
-    if (activeChat?.id) {
-      messageSubscription = supabase
-        .channel(`ai_messages_channel_${activeChat.id}`)
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'ai_messages',
-          filter: `chat_id=eq.${activeChat.id}` 
-        }, (payload) => {
-          // Handle different types of changes
-          if (payload.eventType === 'INSERT') {
-            // Add the new message to the messages array
-            setMessages(currentMessages => [...currentMessages, payload.new]);
-          } else if (payload.eventType === 'UPDATE') {
-            // Update the modified message
-            setMessages(currentMessages => 
-              currentMessages.map(msg => msg.id === payload.new.id ? payload.new : msg)
-            );
-          } else if (payload.eventType === 'DELETE') {
-            // Remove the deleted message
-            setMessages(currentMessages => 
-              currentMessages.filter(msg => msg.id !== payload.old.id)
-            );
-          }
-        })
-        .subscribe((status) => {
-          if (status !== 'SUBSCRIBED') {
-            console.log('Message subscription status:', status);
-          }
-        });
-    }
+    // Subscribe to message updates
+    const messagesSubscription = supabase
+      .channel(`ai_messages:${activeChat?.id}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'ai_messages',
+        filter: `chat_id=eq.${activeChat?.id}` 
+      }, () => {
+        fetchMessages();
+      })
+      .subscribe();
       
     return () => {
-      if (messageSubscription) {
-        supabase.removeChannel(messageSubscription);
-      }
+      messagesSubscription.unsubscribe();
     };
-  }, [activeChat, user, initializeChatSession]);
+  }, [activeChat, user]);
+  
+  // Initialize chat session with history
+  const initializeChatSession = useCallback(async (messageHistory) => {
+    try {
+      const session = await createChatSession();
+      
+      // Reconstruct history in Gemini's format
+      for (const msg of messageHistory) {
+        if (msg.is_ai) {
+          // Skip as we only need to provide user messages
+          continue;
+        }
+        
+        // Add user messages to session
+        await session.sendMessage(msg.content);
+        
+        // Skip to next message if there's no AI response after this
+        const nextIndex = messageHistory.indexOf(msg) + 1;
+        if (nextIndex >= messageHistory.length || !messageHistory[nextIndex].is_ai) {
+          continue;
+        }
+      }
+      
+      setChatSession(session);
+    } catch (error) {
+      console.error('Error initializing chat session:', error);
+      setError('Failed to initialize AI. Please try again.');
+    }
+  }, []);
   
   // Create a new AI chat
   const createChat = async (initialPrompt) => {
@@ -202,54 +174,10 @@ export function useAiChat() {
     setIsSending(true);
     
     try {
-      // Generate a title for the chat (with fallback)
-      let title;
-      try {
-        title = await generateChatTitle(initialPrompt);
-      } catch (error) {
-        console.error('Failed to generate title, using fallback:', error);
-        // Fallback title if API fails
-        title = initialPrompt.substring(0, 30) + '...';
-      }
+      // Generate a title for the chat
+      const title = await generateChatTitle(initialPrompt);
       
-      // Create temporary chat for immediate display
-      const tempChat = {
-        id: 'temp-chat-' + Date.now(),
-        title,
-        created_by: user.id,
-        privacy: 'private',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      // Update UI immediately with temporary chat
-      setChats(currentChats => [tempChat, ...currentChats]);
-      setActiveChat(tempChat);
-      
-      // Create temporary message objects for immediate display
-      const tempUserMsg = {
-        id: 'temp-user-' + Date.now(),
-        chat_id: tempChat.id,
-        user_id: user.id,
-        is_ai: false,
-        content: initialPrompt,
-        created_at: new Date().toISOString(),
-        user: { id: user.id, name: user.email || 'You' }
-      };
-      
-      const tempAiMsg = {
-        id: 'temp-ai-' + Date.now(),
-        chat_id: tempChat.id,
-        user_id: null,
-        is_ai: true,
-        content: "Thinking...",
-        created_at: new Date().toISOString()
-      };
-      
-      // Update UI with temporary messages
-      setMessages([tempUserMsg, tempAiMsg]);
-      
-      // Create the chat in the database
+      // Create the chat
       const { data: chat, error: chatError } = await supabase
         .from('ai_chats')
         .insert({
@@ -276,38 +204,22 @@ export function useAiChat() {
       
       if (userMsgError) throw userMsgError;
       
-      // Get response from AI (with fallback)
-      let aiResponse;
-      try {
-        aiResponse = await generateResponse(initialPrompt);
-      } catch (error) {
-        console.error('Failed to get AI response, using fallback:', error);
-        // Fallback message if API fails
-        aiResponse = "I'm sorry, I couldn't generate a response at this time. The AI service might be temporarily unavailable.";
-      }
+      // Get response from AI
+      const aiResponse = await generateResponse(initialPrompt);
       
       // Add the AI's response
-      const { data: aiMessage, error: aiMsgError } = await supabase
+      const { error: aiMsgError } = await supabase
         .from('ai_messages')
         .insert({
           chat_id: chat.id,
           user_id: null,
           is_ai: true,
           content: aiResponse
-        })
-        .select()
-        .single();
+        });
       
       if (aiMsgError) throw aiMsgError;
       
-      // Update UI with real chat and messages
-      setChats(currentChats => 
-        currentChats.filter(c => c.id !== tempChat.id)
-          .concat([chat])
-          .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
-      );
       setActiveChat(chat);
-      setMessages([userMessage, aiMessage]);
       
       return { success: true, chat };
     } catch (error) {
@@ -319,7 +231,7 @@ export function useAiChat() {
     }
   };
   
-  // Send a message to the AI - improved to update UI immediately
+  // Send a message to the AI
   const sendMessage = async (content) => {
     if (!content?.trim() || !activeChat || !user) {
       return { success: false, error: 'Missing content, chat, or user' };
@@ -328,21 +240,7 @@ export function useAiChat() {
     setIsSending(true);
     
     try {
-      // Create a temporary message object for immediate display
-      const tempUserMsg = {
-        id: 'temp-user-' + Date.now(),
-        chat_id: activeChat.id,
-        user_id: user.id,
-        is_ai: false,
-        content,
-        created_at: new Date().toISOString(),
-        user: { id: user.id, name: user.email || 'You' }
-      };
-      
-      // Update UI immediately with the temporary message
-      setMessages(currentMessages => [...currentMessages, tempUserMsg]);
-      
-      // Add the user's message to the database
+      // Add the user's message
       const { data: userMessage, error: userMsgError } = await supabase
         .from('ai_messages')
         .insert({
@@ -356,51 +254,20 @@ export function useAiChat() {
       
       if (userMsgError) throw userMsgError;
       
-      // Create temporary AI response for immediate feedback
-      const tempAiMsg = {
-        id: 'temp-ai-' + Date.now(),
-        chat_id: activeChat.id,
-        user_id: null,
-        is_ai: true,
-        content: "Thinking...",
-        created_at: new Date().toISOString()
-      };
+      // Get response from AI
+      const aiResponse = await generateResponse(content, chatSession);
       
-      // Update UI with temporary AI response
-      setMessages(currentMessages => 
-        currentMessages.filter(msg => msg.id !== tempUserMsg.id)
-          .concat([userMessage, tempAiMsg])
-      );
-      
-      // Get response from AI (with fallback)
-      let aiResponse;
-      try {
-        aiResponse = await generateResponse(content, chatSession);
-      } catch (error) {
-        console.error('Failed to get AI response, using fallback:', error);
-        // Fallback message if API fails
-        aiResponse = "I'm sorry, I couldn't generate a response at this time. The AI service might be temporarily unavailable.";
-      }
-      
-      // Add the AI's response to the database
-      const { data: aiMessage, error: aiMsgError } = await supabase
+      // Add the AI's response
+      const { error: aiMsgError } = await supabase
         .from('ai_messages')
         .insert({
           chat_id: activeChat.id,
           user_id: null,
           is_ai: true,
           content: aiResponse
-        })
-        .select()
-        .single();
+        });
       
       if (aiMsgError) throw aiMsgError;
-      
-      // Remove temporary message and update with real message
-      setMessages(currentMessages => 
-        currentMessages.filter(msg => msg.id !== tempAiMsg.id)
-          .concat([aiMessage])
-      );
       
       // Update chat timestamp
       await supabase
