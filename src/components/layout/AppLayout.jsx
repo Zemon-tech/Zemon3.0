@@ -9,7 +9,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { MusicProvider } from "@/contexts/MusicContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 import { MusicPlayer } from "@/components/layout/MusicPlayer";
+import { NotificationPanel } from "@/components/notifications/NotificationPanel";
+import { NotificationBadge } from "@/components/notifications/NotificationBadge";
+import { SearchModal } from "@/components/search/SearchModal";
+import { Toaster } from "sonner";
 import { 
   LayoutGrid, 
   CheckSquare, 
@@ -18,44 +23,26 @@ import {
   Settings, 
   LogOut, 
   Menu,
-  Bell,
   Moon,
   Sun,
   Sparkles,
-  Music
+  Music,
+  Search,
+  ShieldAlert,
+  Users,
+  Bell
 } from "lucide-react";
 
 export function AppLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [userData, setUserData] = useState(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const pathname = usePathname();
-  const { user, signOut } = useAuth();
-
-  useEffect(() => {
-    // Fetch user data from the database if authenticated
-    const fetchUserData = async () => {
-      if (user && user.id) {
-        try {
-          const { data, error } = await supabase
-            .from('users')
-            .select('name, email, role')
-            .eq('id', user.id)
-            .single();
-          
-          if (error) throw error;
-          setUserData(data);
-        } catch (error) {
-          console.error('Error fetching user data:', error.message);
-        }
-      }
-    };
-
-    fetchUserData();
-  }, [user]);
+  const { user, userData, signOut, isAdmin } = useAuth();
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
+  const toggleSearch = () => setIsSearchOpen(!isSearchOpen);
 
   // Get user initials for avatar
   const getUserInitials = () => {
@@ -67,104 +54,155 @@ export function AppLayout({ children }) {
       .substring(0, 2);
   };
 
-  const navigation = [
+  // Basic navigation items for all users
+  let navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutGrid },
     { name: "Chat", href: "/chat", icon: MessageSquare },
     { name: "AI Assistant", href: "/ai", icon: Sparkles },
     { name: "Music", href: "/music", icon: Music },
     { name: "Resources", href: "/resources", icon: FileText },
+    { name: "Victory Wall", href: "/victory-wall", icon: CheckSquare },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 
+  // Add admin section if user is an admin
+  if (isAdmin) {
+    navigation = [
+      ...navigation,
+      { name: "Admin", href: "/admin", icon: ShieldAlert, divider: true },
+      { name: "Notifications", href: "/admin/notifications", icon: Bell, isSubItem: true },
+      { name: "User Management", href: "/admin/users", icon: Users, isSubItem: true },
+    ];
+  }
+
   return (
     <MusicProvider>
-      <div className={`h-screen flex flex-col ${isDarkMode ? 'dark' : ''}`}>
-        {/* Header */}
-        <header className="h-16 px-4 border-b flex items-center justify-between bg-white dark:bg-gray-900 dark:border-gray-800 z-10">
-          <div className="flex items-center">
-            <Button variant="ghost" size="icon" onClick={toggleSidebar} className="mr-2">
-              <Menu className="h-5 w-5" />
-            </Button>
-            <h1 className="text-xl font-bold">Team Management</h1>
-          </div>
-          <div className="flex items-center space-x-4">
-            {/* Music Player */}
-            <div className="mr-4">
-              <MusicPlayer />
-            </div>
-            
-            <Button variant="ghost" size="icon" onClick={toggleTheme}>
-              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </Button>
-            <Button variant="ghost" size="icon">
-              <Bell className="h-5 w-5" />
-            </Button>
+      <NotificationProvider>
+        <div className={`h-screen flex flex-col ${isDarkMode ? 'dark' : ''}`}>
+          {/* Header */}
+          <header className="h-16 px-4 border-b flex items-center justify-between bg-white dark:bg-gray-900 dark:border-gray-800 z-10">
             <div className="flex items-center">
-              {userData && (
-                <span className="mr-2 text-sm font-medium">
-                  {userData.name || user?.email || 'User'}
-                </span>
-              )}
-              <Avatar>
-                <AvatarFallback>{getUserInitials()}</AvatarFallback>
-              </Avatar>
-            </div>
-          </div>
-        </header>
-
-        <div className="flex-1 flex overflow-hidden">
-          {/* Sidebar - use width transitions and overflow hidden */}
-          <aside 
-            className={cn(
-              "border-r bg-gray-50 dark:bg-gray-900 dark:border-gray-800 transition-all duration-300 overflow-hidden",
-              isSidebarOpen ? "w-64" : "w-0"
-            )}
-          >
-            <nav className="w-64 flex-1 px-2 py-4 space-y-1">
-              {navigation.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={cn(
-                      "flex items-center px-3 py-2 text-sm font-medium rounded-md",
-                      pathname === item.href
-                        ? "bg-gray-200 text-gray-900 dark:bg-gray-800 dark:text-white"
-                        : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-                    )}
-                  >
-                    <Icon className="mr-3 h-5 w-5" aria-hidden="true" />
-                    {item.name}
-                  </Link>
-                );
-              })}
-            </nav>
-            
-            <div className="w-64 p-4 border-t dark:border-gray-800">
-              <Button 
-                variant="outline" 
-                className="w-full flex items-center justify-center"
-                onClick={signOut}
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
+              <Button variant="ghost" size="icon" onClick={toggleSidebar} className="mr-2">
+                <Menu className="h-5 w-5" />
               </Button>
+              <h1 className="text-xl font-bold">Team Management</h1>
             </div>
-          </aside>
+            
+            {/* Global search */}
+            <div className="hidden md:flex items-center max-w-md w-full mx-4">
+              <div className="relative w-full">
+                <input
+                  type="text"
+                  placeholder="Search documentation, tools, tutorials..."
+                  className="w-full h-9 pl-10 pr-4 rounded-full bg-gray-100 dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600"
+                  onClick={toggleSearch}
+                  readOnly
+                />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              {/* Music Player */}
+              <div className="mr-2">
+                <MusicPlayer />
+              </div>
+              
+              <Button variant="ghost" size="icon" onClick={toggleTheme}>
+                {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              </Button>
+              
+              {/* Mobile search button */}
+              <Button variant="ghost" size="icon" className="md:hidden" onClick={toggleSearch}>
+                <Search className="h-5 w-5" />
+              </Button>
+              
+              {/* Notification Badge */}
+              <NotificationBadge />
+              
+              <div className="flex items-center">
+                {userData && (
+                  <span className="mr-2 text-sm font-medium hidden sm:block">
+                    {userData.name || user?.email || 'User'}
+                    {isAdmin && (
+                      <span className="ml-1 text-xs px-1.5 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 rounded">
+                        Admin
+                      </span>
+                    )}
+                  </span>
+                )}
+                <Avatar>
+                  <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                </Avatar>
+              </div>
+            </div>
+          </header>
 
-          {/* Main content */}
-          <main className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-950">
-            {children}
-          </main>
+          <div className="flex-1 flex overflow-hidden">
+            {/* Sidebar - use width transitions and overflow hidden */}
+            <aside 
+              className={cn(
+                "border-r bg-gray-50 dark:bg-gray-900 dark:border-gray-800 transition-all duration-300 overflow-hidden",
+                isSidebarOpen ? "w-64" : "w-0"
+              )}
+            >
+              <nav className="w-64 flex-1 px-2 py-4 space-y-1">
+                {navigation.map((item) => (
+                  <div key={item.name}>
+                    {item.divider && (
+                      <div className="h-px bg-gray-200 dark:bg-gray-700 my-3 mx-2" />
+                    )}
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        "flex items-center px-3 py-2 text-sm font-medium rounded-md",
+                        item.isSubItem && "pl-10",
+                        pathname === item.href || pathname.startsWith(`${item.href}/`)
+                          ? "bg-gray-200 text-gray-900 dark:bg-gray-800 dark:text-white"
+                          : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                      )}
+                    >
+                      {item.icon && <item.icon className="mr-3 h-5 w-5" aria-hidden="true" />}
+                      {item.name}
+                    </Link>
+                  </div>
+                ))}
+              </nav>
+              
+              <div className="w-64 p-4 border-t dark:border-gray-800">
+                <Button 
+                  variant="outline" 
+                  className="w-full flex items-center justify-center"
+                  onClick={signOut}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </Button>
+              </div>
+            </aside>
+
+            {/* Main content */}
+            <main className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-950">
+              {children}
+            </main>
+          </div>
+          
+          {/* Notification Panel */}
+          <NotificationPanel />
+          
+          {/* Global Search Modal */}
+          <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+          
+          {/* Toast Container */}
+          <Toaster position="top-right" richColors closeButton />
+          
+          {/* Audio player containers */}
+          <div id="audio-containers" style={{ position: 'absolute', left: '-9999px', top: '-9999px', visibility: 'hidden', zIndex: -1 }}>
+            <div id="soundcloud-container"></div>
+            <div id="youtube-player"></div>
+          </div>
         </div>
-        
-        {/* Audio player containers */}
-        <div id="audio-containers" style={{ position: 'absolute', left: '-9999px', top: '-9999px', visibility: 'hidden', zIndex: -1 }}>
-          <div id="soundcloud-container"></div>
-          <div id="youtube-player"></div>
-        </div>
-      </div>
+      </NotificationProvider>
     </MusicProvider>
   );
 } 
