@@ -72,33 +72,33 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="h-full flex border overflow-hidden">
+    <div className="h-full flex border overflow-hidden border-base-300 dark:border-base-800">
       {/* Sidebar */}
-      <div className="w-64 border-r flex flex-col">
-        <div className="p-4 border-b">
+      <div className="w-64 border-r flex flex-col bg-base-100 dark:bg-base-300 border-base-300 dark:border-base-800">
+        <div className="p-4 border-b border-base-300 dark:border-base-800">
           <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search" className="pl-8" />
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-base-content/70 dark:text-base-content/70" />
+            <Input placeholder="Search" className="pl-8 bg-base-200 border-base-300 dark:bg-base-200 dark:border-base-800 dark:text-base-content" />
           </div>
         </div>
 
         <div className="flex-1 overflow-auto">
           {isLoading ? (
             <div className="p-3 space-y-2">
-              <Skeleton className="h-5 w-full" />
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-5 w-full dark:bg-base-200" />
+              <Skeleton className="h-8 w-full dark:bg-base-200" />
+              <Skeleton className="h-8 w-full dark:bg-base-200" />
+              <Skeleton className="h-8 w-full dark:bg-base-200" />
             </div>
           ) : (
             <>
               <div className="p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-sm text-muted-foreground">CHANNELS</h3>
+                <div className="flex items-center justify-between mb-2 px-2">
+                  <h3 className="font-semibold text-sm text-base-content/70 dark:text-base-content/70">CHANNELS</h3>
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-5 w-5"
+                    className="h-5 w-5 hover:bg-base-200 hover:text-primary dark:hover:bg-base-200 dark:text-base-content/70 dark:hover:text-base-content"
                     onClick={() => setIsCreateChannelOpen(true)}
                   >
                     <PlusCircle className="h-4 w-4" />
@@ -113,19 +113,19 @@ export default function ChatPage() {
                   />
                 ))}
                 {channels.length === 0 && (
-                  <p className="text-xs text-muted-foreground px-2">No channels found</p>
+                  <p className="text-xs text-base-content/60 dark:text-base-content/60 px-3">No channels found</p>
                 )}
               </div>
 
-              <Separator className="my-2" />
+              <Separator className="my-2 bg-base-300 dark:bg-base-800" />
 
               <div className="p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-sm text-muted-foreground">DIRECT MESSAGES</h3>
+                <div className="flex items-center justify-between mb-2 px-2">
+                  <h3 className="font-semibold text-sm text-base-content/70 dark:text-base-content/70">DIRECT MESSAGES</h3>
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-5 w-5"
+                    className="h-5 w-5 hover:bg-base-200 hover:text-primary dark:hover:bg-base-200 dark:text-base-content/70 dark:hover:text-base-content"
                     onClick={() => setIsCreateDMOpen(true)}
                   >
                     <PlusCircle className="h-4 w-4" />
@@ -150,7 +150,7 @@ export default function ChatPage() {
                   );
                 })}
                 {directMessages.length === 0 && (
-                  <p className="text-xs text-muted-foreground px-2">No direct messages</p>
+                  <p className="text-xs text-base-content/60 dark:text-base-content/60 px-3">No direct messages</p>
                 )}
               </div>
             </>
@@ -159,15 +159,15 @@ export default function ChatPage() {
       </div>
 
       {/* Chat content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col bg-base-100 dark:bg-base-300">
         {/* Chat header */}
         {activeChannel ? (
-          <div className="flex items-center justify-between px-4 py-3 border-b bg-white dark:bg-gray-900">
+          <div className="flex items-center justify-between px-4 py-3 border-b bg-base-100 dark:bg-base-300 border-base-300 dark:border-base-800">
             <div className="flex items-center">
               {activeChannel.type === 'direct' ? (
                 <div className="flex items-center">
                   <Avatar className="h-8 w-8 mr-3">
-                    <AvatarFallback className="bg-primary/10 text-primary">
+                    <AvatarFallback className="bg-primary/10 text-primary dark:bg-base-200 dark:text-base-content">
                       {(() => {
                         const memberIds = activeChannel.name?.split(':') || [];
                         const otherUserId = memberIds.find(id => id !== user?.id);
@@ -175,27 +175,27 @@ export default function ChatPage() {
                       })()}
                     </AvatarFallback>
                   </Avatar>
-                  <h3 className="font-semibold">{getChannelDisplayName(activeChannel)}</h3>
-                  <span className="ml-2 px-1.5 py-0.5 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                  <h3 className="font-semibold dark:text-base-content">{getChannelDisplayName(activeChannel)}</h3>
+                  <span className="ml-2 px-1.5 py-0.5 text-xs bg-success/20 text-success dark:bg-success/20 dark:text-success">
                     online
                   </span>
                 </div>
               ) : (
                 <div className="flex items-center">
-                  <div className="flex items-center justify-center h-8 w-8 rounded-md bg-primary/10 text-primary mr-3">
+                  <div className="flex items-center justify-center h-8 w-8 bg-primary/10 text-primary dark:bg-base-200 dark:text-base-content mr-3">
                     <Hash className="h-4 w-4" />
                   </div>
-                  <h3 className="font-semibold">{getChannelDisplayName(activeChannel)}</h3>
+                  <h3 className="font-semibold dark:text-base-content">{getChannelDisplayName(activeChannel)}</h3>
                 </div>
               )}
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-1">
               {activeChannel.type !== 'direct' && (
                 <>
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="rounded-full"
+                    className="hover:bg-base-200 dark:hover:bg-base-200 dark:text-base-content/70"
                     onClick={() => setIsAddMembersOpen(true)}
                     title="Add members"
                   >
@@ -204,7 +204,7 @@ export default function ChatPage() {
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="rounded-full"
+                    className="hover:bg-base-200 dark:hover:bg-base-200 dark:text-base-content/70"
                     onClick={() => setIsViewMembersOpen(true)}
                     title="View members"
                   >
@@ -212,28 +212,28 @@ export default function ChatPage() {
                   </Button>
                 </>
               )}
-              <Button variant="ghost" size="icon" className="rounded-full">
+              <Button variant="ghost" size="icon" className="hover:bg-base-200 dark:hover:bg-base-200 dark:text-base-content/70">
                 <Phone className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="rounded-full">
+              <Button variant="ghost" size="icon" className="hover:bg-base-200 dark:hover:bg-base-200 dark:text-base-content/70">
                 <Video className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="rounded-full">
+              <Button variant="ghost" size="icon" className="hover:bg-base-200 dark:hover:bg-base-200 dark:text-base-content/70">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-between px-4 py-3 border-b bg-white dark:bg-gray-900">
-            <h3 className="font-semibold">Select a channel</h3>
+          <div className="flex items-center justify-between px-4 py-3 border-b bg-base-100 dark:bg-base-300 border-base-300 dark:border-base-800">
+            <h3 className="font-semibold dark:text-base-content">Select a channel</h3>
           </div>
         )}
 
         {/* Messages */}
         {activeChannel ? (
-          <div className="flex-1 overflow-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-950">
+          <div className="flex-1 overflow-auto p-4 space-y-6 bg-base-200 dark:bg-base-200">
             {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+              <div className="flex flex-col items-center justify-center h-full text-base-content/60 dark:text-base-content/60">
                 <p>No messages yet</p>
                 <p className="text-sm">Be the first to send a message!</p>
               </div>
@@ -252,14 +252,14 @@ export default function ChatPage() {
             <div ref={messagesEndRef} />
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-            <div className="text-center p-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm max-w-md">
+          <div className="flex-1 flex items-center justify-center bg-base-200 dark:bg-base-200">
+            <div className="text-center p-6 bg-base-100 dark:bg-base-300">
               <Hash className="h-12 w-12 text-primary mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Welcome to Chat</h3>
-              <p className="text-muted-foreground mb-4">
+              <h3 className="text-lg font-semibold mb-2 dark:text-base-content">Welcome to Chat</h3>
+              <p className="text-base-content/60 dark:text-base-content/60 mb-4">
                 Select a channel to start chatting or create a new one.
               </p>
-              <Button onClick={() => setIsCreateChannelOpen(true)}>
+              <Button onClick={() => setIsCreateChannelOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-content">
                 Create New Channel
               </Button>
             </div>
@@ -268,17 +268,17 @@ export default function ChatPage() {
 
         {/* Message input */}
         {activeChannel && (
-          <div className="p-4 border-t bg-white dark:bg-gray-900">
-            <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
-              <Button type="button" variant="ghost" size="icon" className="rounded-full">
+          <div className="p-4 border-t bg-base-100 dark:bg-base-300 border-base-300 dark:border-base-800">
+            <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+              <Button type="button" variant="ghost" size="icon" className="hover:bg-base-200 dark:hover:bg-base-200 dark:text-base-content/70">
                 <PlusCircle className="h-5 w-5" />
               </Button>
-              <Button type="button" variant="ghost" size="icon" className="rounded-full">
+              <Button type="button" variant="ghost" size="icon" className="hover:bg-base-200 dark:hover:bg-base-200 dark:text-base-content/70">
                 <Paperclip className="h-5 w-5" />
               </Button>
               <Input 
                 placeholder={`Message ${getChannelDisplayName(activeChannel)}`} 
-                className="flex-1 rounded-full"
+                className="flex-1 bg-base-200 border-base-300 dark:bg-base-200 dark:border-base-800 dark:text-base-content"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 autoComplete="off"
@@ -287,7 +287,7 @@ export default function ChatPage() {
                 type="submit" 
                 size="icon" 
                 disabled={!newMessage.trim()} 
-                className="rounded-full"
+                className="bg-primary hover:bg-primary/90 text-primary-content"
               >
                 <Send className="h-4 w-4" />
               </Button>
@@ -324,16 +324,16 @@ export default function ChatPage() {
 function ChannelItem({ name, active, unread, onClick }) {
   return (
     <button
-      className={`w-full flex items-center px-2 py-1.5 rounded-md mb-1 
+      className={`w-full flex items-center px-3 py-2 mb-1 transition-colors duration-150
       ${active 
-        ? 'bg-gray-200 dark:bg-gray-800' 
-        : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+        ? 'bg-base-300 dark:bg-base-200 text-base-content dark:text-base-content' 
+        : 'hover:bg-base-200 dark:hover:bg-base-100 text-base-content/70 dark:text-base-content/70'}`}
       onClick={onClick}
     >
-      <Hash className="h-4 w-4 mr-2 text-muted-foreground" />
+      <Hash className={`h-4 w-4 mr-2 ${active ? 'text-base-content dark:text-base-content' : 'text-base-content/60 dark:text-base-content/60'}`} />
       <span className={`text-sm flex-1 text-left truncate ${active ? 'font-medium' : ''}`}>{name}</span>
       {unread && (
-        <span className="bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+        <span className="bg-primary text-primary-content text-xs w-5 h-5 flex items-center justify-center">
           {unread}
         </span>
       )}
@@ -363,24 +363,24 @@ function DirectMessageItem({ name, status, active, unread, onClick }) {
   
   return (
     <button
-      className={`w-full flex items-center px-2 py-1.5 rounded-md mb-1 
+      className={`w-full flex items-center px-3 py-2 mb-1 transition-colors duration-150
       ${active 
-        ? 'bg-gray-200 dark:bg-gray-800' 
-        : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+        ? 'bg-base-300 dark:bg-base-200 text-base-content dark:text-base-content' 
+        : 'hover:bg-base-200 dark:hover:bg-base-100 text-base-content/70 dark:text-base-content/70'}`}
       onClick={onClick}
     >
       <div className="relative mr-2">
-        <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px]">
+        <div className="w-6 h-6 bg-primary/10 text-primary dark:bg-base-200 dark:text-base-content flex items-center justify-center text-[10px]">
           {getInitials(name)}
         </div>
         <div 
-          className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white
-          ${status === 'online' ? 'bg-green-500' : status === 'idle' ? 'bg-yellow-500' : 'bg-gray-400'}`}
+          className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 border border-base-100 dark:border-base-300
+          ${status === 'online' ? 'bg-success' : status === 'idle' ? 'bg-warning' : 'bg-neutral'}`}
         ></div>
       </div>
       <span className={`text-sm flex-1 text-left truncate ${active ? 'font-medium' : ''}`}>{name}</span>
       {unread && (
-        <span className="bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+        <span className="bg-primary text-primary-content text-xs w-5 h-5 flex items-center justify-center">
           {unread}
         </span>
       )}
@@ -391,29 +391,29 @@ function DirectMessageItem({ name, status, active, unread, onClick }) {
 // Message component
 function Message({ user, time, content, avatar, isCurrentUser }) {
   return (
-    <div className={`flex space-x-3 ${isCurrentUser ? 'justify-end' : ''}`}>
+    <div className={`flex gap-3 ${isCurrentUser ? 'justify-end' : ''}`}>
       {!isCurrentUser && (
         <Avatar className="h-8 w-8">
-          <AvatarFallback className="bg-primary/10 text-primary text-xs">{avatar}</AvatarFallback>
+          <AvatarFallback className="bg-primary/10 text-primary text-xs dark:bg-base-200 dark:text-base-content">{avatar}</AvatarFallback>
         </Avatar>
       )}
       <div className={`max-w-[75%] ${isCurrentUser ? 'text-right' : ''}`}>
-        <div className="flex items-baseline">
-          {!isCurrentUser && <h4 className="font-medium text-sm">{user}</h4>}
-          <span className={`text-xs text-muted-foreground ${!isCurrentUser ? 'ml-2' : ''}`}>{time}</span>
-          {isCurrentUser && <h4 className="font-medium text-sm ml-2">{user}</h4>}
+        <div className="flex items-baseline mb-1">
+          {!isCurrentUser && <h4 className="font-medium text-sm dark:text-base-content">{user}</h4>}
+          <span className={`text-xs text-base-content/60 dark:text-base-content/60 ${!isCurrentUser ? 'ml-2' : ''}`}>{time}</span>
+          {isCurrentUser && <h4 className="font-medium text-sm ml-2 dark:text-base-content">{user}</h4>}
         </div>
-        <div className={`mt-1 p-3 rounded-2xl ${
+        <div className={`p-3 ${
           isCurrentUser 
-            ? 'bg-primary text-white rounded-tr-none' 
-            : 'bg-gray-200 dark:bg-gray-800 rounded-tl-none'
+            ? 'bg-primary text-primary-content' 
+            : 'bg-base-300 dark:bg-base-200 text-base-content dark:text-base-content'
         }`}>
           <p className={`text-sm break-words ${isCurrentUser ? 'text-left' : ''}`}>{content}</p>
         </div>
       </div>
       {isCurrentUser && (
         <Avatar className="h-8 w-8">
-          <AvatarFallback className="bg-primary/10 text-primary text-xs">{avatar}</AvatarFallback>
+          <AvatarFallback className="bg-primary/10 text-primary text-xs dark:bg-base-200 dark:text-base-content">{avatar}</AvatarFallback>
         </Avatar>
       )}
     </div>

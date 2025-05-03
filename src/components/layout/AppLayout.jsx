@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/components/ThemeProvider";
 import { supabase } from "@/lib/supabase";
 import { MusicProvider } from "@/contexts/MusicContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
@@ -35,13 +36,13 @@ import {
 
 export function AppLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const pathname = usePathname();
   const { user, userData, signOut, isAdmin } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-  const toggleTheme = () => setIsDarkMode(!isDarkMode);
+  
   const toggleSearch = () => setIsSearchOpen(!isSearchOpen);
 
   // Get user initials for avatar
@@ -78,14 +79,14 @@ export function AppLayout({ children }) {
   return (
     <MusicProvider>
       <NotificationProvider>
-        <div className={`h-screen flex flex-col ${isDarkMode ? 'dark' : ''}`}>
+        <div className="h-screen flex flex-col">
           {/* Header */}
           <header className="h-16 px-4 border-b flex items-center justify-between bg-white dark:bg-gray-900 dark:border-gray-800 z-10">
             <div className="flex items-center">
-              <Button variant="ghost" size="icon" onClick={toggleSidebar} className="mr-2">
+              <Button variant="ghost" size="icon" onClick={toggleSidebar} className="mr-2 dark:text-white dark:hover:bg-gray-800">
                 <Menu className="h-5 w-5" />
               </Button>
-              <h1 className="text-xl font-bold">Team Management</h1>
+              <h1 className="text-xl font-bold dark:text-white">Team Management</h1>
             </div>
             
             {/* Global search */}
@@ -94,11 +95,11 @@ export function AppLayout({ children }) {
                 <input
                   type="text"
                   placeholder="Search documentation, tools, tutorials..."
-                  className="w-full h-9 pl-10 pr-4 rounded-full bg-gray-100 dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600"
+                  className="w-full h-9 pl-10 pr-4 rounded-full bg-gray-100 dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-primary/50 dark:text-gray-200"
                   onClick={toggleSearch}
                   readOnly
                 />
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
               </div>
             </div>
             
@@ -108,12 +109,12 @@ export function AppLayout({ children }) {
                 <MusicPlayer />
               </div>
               
-              <Button variant="ghost" size="icon" onClick={toggleTheme}>
-                {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              <Button variant="ghost" size="icon" onClick={toggleTheme} className="dark:hover:bg-gray-800 dark:text-gray-200">
+                {theme === "dark" ? <Sun className="h-5 w-5 text-yellow-500" /> : <Moon className="h-5 w-5" />}
               </Button>
               
               {/* Mobile search button */}
-              <Button variant="ghost" size="icon" className="md:hidden" onClick={toggleSearch}>
+              <Button variant="ghost" size="icon" className="md:hidden dark:hover:bg-gray-800 dark:text-gray-200" onClick={toggleSearch}>
                 <Search className="h-5 w-5" />
               </Button>
               
@@ -122,17 +123,17 @@ export function AppLayout({ children }) {
               
               <div className="flex items-center">
                 {userData && (
-                  <span className="mr-2 text-sm font-medium hidden sm:block">
+                  <span className="mr-2 text-sm font-medium hidden sm:block dark:text-gray-200">
                     {userData.name || user?.email || 'User'}
                     {isAdmin && (
-                      <span className="ml-1 text-xs px-1.5 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 rounded">
+                      <span className="ml-1 text-xs px-1.5 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-200 rounded">
                         Admin
                       </span>
                     )}
                   </span>
                 )}
                 <Avatar>
-                  <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                  <AvatarFallback className="dark:bg-gray-800 dark:text-gray-200">{getUserInitials()}</AvatarFallback>
                 </Avatar>
               </div>
             </div>
@@ -150,7 +151,7 @@ export function AppLayout({ children }) {
                 {navigation.map((item) => (
                   <div key={item.name}>
                     {item.divider && (
-                      <div className="h-px bg-gray-200 dark:bg-gray-700 my-3 mx-2" />
+                      <div className="h-px bg-gray-200 dark:bg-gray-800 my-3 mx-2" />
                     )}
                     <Link
                       href={item.href}
@@ -159,10 +160,20 @@ export function AppLayout({ children }) {
                         item.isSubItem && "pl-10",
                         pathname === item.href || pathname.startsWith(`${item.href}/`)
                           ? "bg-gray-200 text-gray-900 dark:bg-gray-800 dark:text-white"
-                          : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                          : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800/70"
                       )}
                     >
-                      {item.icon && <item.icon className="mr-3 h-5 w-5" aria-hidden="true" />}
+                      {item.icon && (
+                        <item.icon 
+                          className={cn(
+                            "mr-3 h-5 w-5",
+                            pathname === item.href || pathname.startsWith(`${item.href}/`)
+                              ? "text-primary dark:text-primary"
+                              : "text-gray-500 dark:text-gray-400 group-hover:text-gray-600"
+                          )}
+                          aria-hidden="true" 
+                        />
+                      )}
                       {item.name}
                     </Link>
                   </div>
@@ -172,7 +183,7 @@ export function AppLayout({ children }) {
               <div className="w-64 p-4 border-t dark:border-gray-800">
                 <Button 
                   variant="outline" 
-                  className="w-full flex items-center justify-center"
+                  className="w-full flex items-center justify-center dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-white dark:border-gray-700"
                   onClick={signOut}
                 >
                   <LogOut className="mr-2 h-4 w-4" />

@@ -6,27 +6,43 @@ import { ProjectCard } from "./components/ProjectCard";
 import { FilterBar } from "./components/FilterBar";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { PlusIcon, Calendar, Image, Users } from "lucide-react";
+import { format } from "date-fns";
 
 export default function VictoryWallPage() {
   const [projects, setProjects] = useState([]);
   const [filteredProjects, setFilteredProjects] = useState([]);
   const [filterValue, setFilterValue] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  // Form states
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [isTeamAchievement, setIsTeamAchievement] = useState(false);
+  const [achievementDate, setAchievementDate] = useState(new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
     const fetchProjects = async () => {
-      if (!user) return;
-      
       try {
         setIsLoading(true);
         
         const { data, error } = await supabase
-          .from('completed_projects')
+          .from('victory_wall')
           .select('*')
-          .order('completion_date', { ascending: false });
+          .order('achievement_date', { ascending: false });
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching projects:', error.message);
+          return;
+        }
         
         setProjects(data || []);
         setFilteredProjects(data || []);
@@ -37,8 +53,17 @@ export default function VictoryWallPage() {
       }
     };
 
-    fetchProjects();
-  }, [user]);
+    // Only fetch if we're mounted
+    let isMounted = true;
+    
+    if (isMounted) {
+      fetchProjects();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [/* no dependencies needed */]);
   
   const handleFilterChange = (value) => {
     setFilterValue(value);
@@ -48,128 +73,201 @@ export default function VictoryWallPage() {
     } else {
       setFilteredProjects(
         projects.filter(project => 
-          project.category.toLowerCase() === value.toLowerCase()
+          project.category?.toLowerCase() === value.toLowerCase()
         )
       );
     }
   };
 
-  // For demonstration purposes - to be replaced with actual data
-  useEffect(() => {
-    if (projects.length === 0 && !isLoading) {
-      // Mock data for demonstration
-      const mockProjects = [
-        {
-          id: 1,
-          title: "Data Analytics Dashboard",
-          description: "Interactive visualization platform for real-time business metrics",
-          image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-          completion_date: "2023-04-15",
-          category: "Analytics",
-          team: ["Alice Johnson", "Bob Smith", "Charlie Brown"],
-          metrics: {
-            roi: "142%",
-            time_saved: "23 hours/week",
-            user_satisfaction: 4.8
-          },
-          badges: ["High Impact", "Innovative", "User Favorite"]
-        },
-        {
-          id: 2,
-          title: "AI-Powered Content Generator",
-          description: "Machine learning tool that creates marketing copy and social media posts",
-          image: "https://images.unsplash.com/photo-1677442135968-6276fe6e771e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2532&q=80",
-          completion_date: "2023-06-22",
-          category: "AI",
-          team: ["Diana Prince", "Erik Stevens", "Fiona Chen"],
-          metrics: {
-            content_produced: "500+ pieces",
-            time_saved: "40 hours/month",
-            accuracy: "92%"
-          },
-          badges: ["Time Saver", "AI Excellence"]
-        },
-        {
-          id: 3,
-          title: "Customer Support Chatbot",
-          description: "24/7 automated support assistant with natural language processing",
-          image: "https://images.unsplash.com/photo-1531746790731-6c087fecd65a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2206&q=80",
-          completion_date: "2023-08-10",
-          category: "Automation",
-          team: ["Grace Kim", "Henry Ford", "Irene Zhang"],
-          metrics: {
-            response_time: "< 2 seconds",
-            tickets_resolved: "65% without human",
-            cost_savings: "$120K annually"
-          },
-          badges: ["Customer Favorite", "Cost Reducer"]
-        },
-        {
-          id: 4,
-          title: "Mobile Payment Solution",
-          description: "Secure, fast payment processing for our e-commerce platforms",
-          image: "https://images.unsplash.com/photo-1556741533-6e6a62bd8b49?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-          completion_date: "2023-09-05",
-          category: "Fintech",
-          team: ["Jack Morris", "Kim Lee", "Liam Wilson"],
-          metrics: {
-            transaction_speed: "0.8 seconds",
-            adoption_rate: "87%",
-            fraud_reduction: "63%"
-          },
-          badges: ["Security Champion", "Performance Leader"]
-        },
-        {
-          id: 5,
-          title: "Supply Chain Optimization",
-          description: "AI-driven logistics planning that reduced delivery times",
-          image: "https://images.unsplash.com/photo-1566843972426-f97148e217e0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-          completion_date: "2023-11-17",
-          category: "Logistics",
-          team: ["Mike Ross", "Nina Patel", "Omar Jackson"],
-          metrics: {
-            delivery_improvement: "32% faster",
-            inventory_accuracy: "99.8%",
-            cost_reduction: "18%"
-          },
-          badges: ["Efficiency Award", "Business Impact"]
-        }
-      ];
+  const handleCreateProject = async (e) => {
+    e.preventDefault();
+    
+    try {
+      if (!user) {
+        alert('You must be logged in to create achievements');
+        return;
+      }
+
+      if (!isAdmin) {
+        alert('Only admins can create achievements');
+        return;
+      }
       
-      setProjects(mockProjects);
-      setFilteredProjects(mockProjects);
+      const { data, error } = await supabase
+        .from('victory_wall')
+        .insert({
+          title,
+          description,
+          image_url: imageUrl,
+          is_team_achievement: isTeamAchievement,
+          user_id: user.id,
+          achievement_date: new Date(achievementDate).toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase error:', error);
+        if (error.code === 'PGRST301') {
+          alert('You do not have permission to create achievements. Please contact an administrator.');
+        } else {
+          alert(`Failed to create achievement: ${error.message}`);
+        }
+        return;
+      }
+
+      // Add new project to state
+      setProjects([data, ...projects]);
+      setFilteredProjects([data, ...filteredProjects]);
+
+      // Reset form
+      setTitle("");
+      setDescription("");
+      setImageUrl("");
+      setIsTeamAchievement(false);
+      setAchievementDate(new Date().toISOString().split('T')[0]);
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error('Error creating project:', error);
+      alert('Failed to create achievement. Please try again.');
     }
-  }, [projects, isLoading]);
+  };
 
   const categories = ["All", "Analytics", "AI", "Automation", "Fintech", "Logistics"];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900">
+    <div className="min-h-screen bg-background">
       {/* Hero Banner */}
-      <AnimatedHeroBanner />
+      <div className="relative w-full overflow-hidden bg-gradient-to-r from-purple-900 to-purple-800">
+        <div className="h-[400px] flex items-center justify-center text-center">
+          <div className="px-6">
+            <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
+              Victory Wall
+            </h1>
+            <p className="text-xl md:text-2xl text-white/80 max-w-2xl mx-auto">
+              Celebrating our team's achievements and completed projects
+            </p>
+          </div>
+        </div>
+      </div>
       
       {/* Content Section */}
       <div className="container mx-auto px-4 py-12">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-400 dark:to-blue-400">
-            Our Victory Wall
-          </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-            Celebrating our team's completed projects and achievements. Each card represents countless hours of dedication, innovation, and collaboration.
-          </p>
+        <div className="flex justify-between items-center mb-8">
+          {/* Filter Bar */}
+          <FilterBar 
+            categories={categories} 
+            activeFilter={filterValue} 
+            onChange={handleFilterChange} 
+          />
+
+          {/* Add Project Button (Admin Only) */}
+          {isAdmin && (
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="ml-4 bg-purple-600 hover:bg-purple-700">
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  Add Achievement
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold text-purple-600">Add New Achievement</DialogTitle>
+                  <DialogDescription className="text-gray-500 dark:text-gray-400">
+                    Fill in the details below to create a new achievement for the Victory Wall.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleCreateProject} className="space-y-6 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="title" className="text-sm font-medium">
+                      Achievement Title
+                    </Label>
+                    <Input
+                      id="title"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="Enter a memorable title"
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-purple-500"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="description" className="text-sm font-medium">
+                      Description
+                    </Label>
+                    <Textarea
+                      id="description"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Describe the achievement and its impact"
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-purple-500 min-h-[100px]"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="imageUrl" className="text-sm font-medium flex items-center gap-2">
+                      <Image className="h-4 w-4" />
+                      Image URL
+                    </Label>
+                    <Input
+                      id="imageUrl"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      placeholder="Enter the URL of an image representing the achievement"
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-purple-500"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="achievementDate" className="text-sm font-medium flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Achievement Date
+                    </Label>
+                    <Input
+                      id="achievementDate"
+                      type="date"
+                      value={achievementDate}
+                      onChange={(e) => setAchievementDate(e.target.value)}
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-purple-500"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                    <Users className="h-4 w-4 text-gray-500" />
+                    <Label htmlFor="isTeamAchievement" className="text-sm font-medium cursor-pointer select-none">
+                      Team Achievement
+                    </Label>
+                    <input
+                      type="checkbox"
+                      id="isTeamAchievement"
+                      checked={isTeamAchievement}
+                      onChange={(e) => setIsTeamAchievement(e.target.checked)}
+                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    />
+                  </div>
+                  
+                  <div className="flex justify-end pt-4">
+                    <Button
+                      type="submit"
+                      className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium"
+                    >
+                      Create Achievement
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
-        
-        {/* Filter Bar */}
-        <FilterBar 
-          categories={categories} 
-          activeFilter={filterValue} 
-          onChange={handleFilterChange} 
-        />
         
         {/* Projects Grid */}
         {isLoading ? (
           <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-gray-900 dark:border-gray-100"></div>
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600"></div>
           </div>
         ) : (
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">

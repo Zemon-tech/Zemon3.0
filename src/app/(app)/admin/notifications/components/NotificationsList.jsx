@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MoreVertical, Search, Eye, Filter } from "lucide-react";
+import { MoreVertical, Search, Eye, Filter, Bell, MessageSquare, CheckSquare, Calendar, FileText } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,32 +35,32 @@ export function NotificationsList({ notifications, users }) {
   // Get icon for notification type
   const getTypeIcon = (type) => {
     switch (type) {
-      case 'chat':
-        return '💬';
+      case 'system':
+        return <Bell className="h-4 w-4 text-gray-500 dark:text-gray-400" />;
+      case 'message':
+        return <MessageSquare className="h-4 w-4 text-blue-500 dark:text-blue-400" />;
+      case 'task':
+        return <CheckSquare className="h-4 w-4 text-green-500 dark:text-green-400" />;
+      case 'event':
+        return <Calendar className="h-4 w-4 text-purple-500 dark:text-purple-400" />;
       case 'resource':
-        return '📄';
-      case 'update':
-        return '🔄';
-      case 'music':
-        return '🎵';
-      case 'victory':
-        return '🏆';
+        return <FileText className="h-4 w-4 text-amber-500 dark:text-amber-400" />;
       default:
-        return '🔔';
+        return <Bell className="h-4 w-4 text-gray-500 dark:text-gray-400" />;
     }
   };
   
   // Get styled badge for severity
   const getSeverityBadge = (severity) => {
     switch (severity) {
-      case "high":
-        return <Badge variant="destructive">High</Badge>;
-      case "medium":
-        return <Badge variant="warning">Medium</Badge>;
-      case "low":
-        return <Badge variant="outline">Low</Badge>;
-      default:
-        return <Badge variant="outline">Low</Badge>;
+      case 'error':
+        return <Badge className="bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40">High</Badge>;
+      case 'warning':
+        return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900/40">Medium</Badge>;
+      case 'success':
+        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/40">Normal</Badge>;
+      default: // info
+        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40">Low</Badge>;
     }
   };
   
@@ -117,12 +117,11 @@ export function NotificationsList({ notifications, users }) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="general">General</SelectItem>
-                <SelectItem value="chat">Chat</SelectItem>
+                <SelectItem value="system">System</SelectItem>
+                <SelectItem value="message">Message</SelectItem>
+                <SelectItem value="task">Task</SelectItem>
+                <SelectItem value="event">Event</SelectItem>
                 <SelectItem value="resource">Resource</SelectItem>
-                <SelectItem value="update">Update</SelectItem>
-                <SelectItem value="music">Music</SelectItem>
-                <SelectItem value="victory">Victory</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -138,9 +137,10 @@ export function NotificationsList({ notifications, users }) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Priorities</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="error">High</SelectItem>
+                <SelectItem value="warning">Medium</SelectItem>
+                <SelectItem value="success">Normal</SelectItem>
+                <SelectItem value="info">Low</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -153,11 +153,11 @@ export function NotificationsList({ notifications, users }) {
       </div>
       
       {/* Notifications table */}
-      <div className="border rounded-lg overflow-hidden">
+      <div className="border rounded-lg overflow-hidden dark:border-gray-700">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-gray-100 dark:bg-gray-800 text-xs uppercase">
+              <tr className="bg-gray-100 dark:bg-gray-800 text-xs uppercase dark:text-gray-300">
                 <th className="px-4 py-3 text-left">Notification</th>
                 <th className="px-4 py-3 text-left">Recipient</th>
                 <th className="px-4 py-3 text-left">Type</th>
@@ -167,10 +167,10 @@ export function NotificationsList({ notifications, users }) {
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className="divide-y dark:divide-gray-700">
               {filteredNotifications.length > 0 ? (
                 filteredNotifications.map((notification) => (
-                  <tr key={notification.id} className="hover:bg-gray-50 dark:hover:bg-gray-900">
+                  <tr key={notification.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/70 dark:text-white">
                     <td className="px-4 py-3">
                       <div className="font-medium">{notification.title}</div>
                       <div className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[200px]">
@@ -191,18 +191,18 @@ export function NotificationsList({ notifications, users }) {
                     <td className="px-4 py-3">
                       {getSeverityBadge(notification.severity)}
                     </td>
-                    <td className="px-4 py-3 text-sm">
+                    <td className="px-4 py-3 text-sm dark:text-gray-300">
                       {formatDate(notification.created_at)}
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant={notification.read ? "outline" : "default"}>
+                      <Badge variant={notification.read ? "outline" : "default"} className={notification.read ? "dark:border-gray-600 dark:text-gray-400" : ""}>
                         {notification.read ? "Read" : "Unread"}
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" className="dark:hover:bg-gray-700">
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>

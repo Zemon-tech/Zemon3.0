@@ -58,14 +58,14 @@ export function NotificationPanel() {
     >
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="border-b border-gray-200 dark:border-gray-800 p-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Notifications</h2>
+        <div className="border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold dark:text-white">Notifications</h2>
           <div className="flex items-center space-x-2">
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={markAllAsRead}
-              className="text-xs flex items-center"
+              className="text-xs flex items-center dark:hover:bg-gray-800 dark:text-gray-300"
             >
               <CheckCheck className="h-4 w-4 mr-1" />
               Mark all as read
@@ -74,6 +74,7 @@ export function NotificationPanel() {
               variant="ghost"
               size="icon"
               onClick={() => setIsNotificationPanelOpen(false)}
+              className="dark:hover:bg-gray-800"
             >
               <X className="h-5 w-5" />
             </Button>
